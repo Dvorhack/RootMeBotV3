@@ -2,3 +2,4 @@ venv/
 start_netns.sh
 test.db
 .env
+__pycache__/

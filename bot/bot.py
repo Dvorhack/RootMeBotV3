@@ -4,6 +4,7 @@ from discord import app_commands
 import os, json
 from typing import List, Optional
 from discord.channel import TextChannel
+import traceback
 
 from db_manager import DBManager
 from rm_api import RootMeAPI
@@ -130,6 +131,17 @@ class CustomBot(commands.Bot):
             message = f'Multiple users found :'
             view = MultipleUserFoundView(channel.message.channel, auteurs, self.api)
             await channel.send(message, view=view)
+
+    async def on_command_error(self, ctx: commands.Context, error):
+        debug = self.get_channel(int(self.bot_channel_id))
+        formatted_lines = traceback.format_exception(type(error), error, error.__traceback__)
+        traceback_str = ''.join(formatted_lines)
+        printed = 0
+        print(traceback_str)
+        while printed < len(traceback_str):
+            size = 1992 if (len(traceback_str)-printed) > 1992 else len(traceback_str)-printed
+            await debug.send('```\n'+traceback_str[printed:printed+size]+'\n```')
+            printed += size
 
     async def on_ready(self):
         debug = self.get_channel(int(self.bot_channel_id))
