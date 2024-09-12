@@ -1,46 +1,7 @@
 import aiohttp
 import asyncio
 import json
-from typing import List
-from typing import Optional
-from sqlalchemy import ForeignKey
-from sqlalchemy import String
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
-from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
-
-
-class Base(DeclarativeBase):
-    pass
-
-user_challenge_association = Table(
-    'user_challenge', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
-    Column('challenge_id', Integer, ForeignKey('challenges.id'), primary_key=True)
-)
-
-class User(Base):
-    __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30))
-    rang: Mapped[Optional[str]]
-    challenges: Mapped[List["Challenge"]] = relationship('Challenge', secondary=user_challenge_association, back_populates='users')
-    
-    def __repr__(self) -> str:
-        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
-
-class Challenge(Base):
-    __tablename__ = "challenges"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    score: Mapped[int]
-    users: Mapped[List["User"]] = relationship('User', secondary=user_challenge_association, back_populates='challenges')
-    def __repr__(self) -> str:
-        return f"Challenge(id={self.id!r}, email_address={self.email_address!r})"
+from db_manager import DBManager
 
 class RootMeAPI(aiohttp.ClientSession):
 
@@ -49,48 +10,92 @@ class RootMeAPI(aiohttp.ClientSession):
 
         self.BASE_API = 'https://api.www.root-me.org/'
         self.api_key = api_key
-        self.db = create_engine("sqlite:///test.db", echo=True)
+        self.db = DBManager()
     
-    async def challenge(self, idx):
-        return await self.fetch(f"{self.BASE_API}/challenges/{idx}")
+    async def fetchChallenge(self, idx):
+        chall = await self.fetch(f"{self.BASE_API}/challenges/{idx}")
+        if isinstance(chall, list):
+            chall = chall[0]
+        return chall
     
-    async def user(self, idx):
-        return await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
+    async def fetchUser(self, idx):
+        user =  await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
+        if isinstance(user, list):
+            user = user[0]
+        return user
     
-    async def fetch(self, url):
+    async def fetchUserByName(self, name):
+        users =  await self.fetch(f"{self.BASE_API}/auteurs", params={'nom': name})
+        if isinstance(users, list):
+            users = users[0]
+
+        if 'error' in users.keys():
+            return []
+        else:
+            return users
+    
+    async def loadChallenge(self, idx):
+        x = self.db.getChallengeById(idx)
+        if x is not None:
+            return
+
+        chall_data = await self.fetchChallenge(idx)
+        self.db.newChallenge(chall_data)
+    
+    async def loadAllChallenges(self):
+        start = 0
+        while True:
+            data =  await self.fetch(f"{self.BASE_API}/challenges/?debut_challenges={start}")
+            challenges, next = data[0], data[-1]
+            start = int(next['href'].split('=')[1])
+
+
+            for idx, chall in challenges.items():
+                await self.loadChallenge(chall['id_challenge'])
+
+            if next['rel'] == 'previous':
+                break
+                
+
+    async def loadUser(self, name = None, idx = None):
+        if name is None and idx is None:
+            raise Exception('loadUser with None name and idx')
+
+        if idx is not None:
+            user = await self.fetchUser(idx)
+        else:
+            user = await self.fetchUserByName(name)
+            if len(user)>1:
+                raise Exception(f'User {name} got multiple result')
+            user = user['0']
+        
+        user_data = await self.fetchUser(user['id_auteur'])
+        print(user_data)
+        self.db.newUser(user_data)
+    
+    async def fetch(self, url, params = None):
         cookies = {"api_key": self.api_key}
         headers = {
             'User-Agent': 'toto'
         }
-        async with self.get(url, cookies=cookies, headers=headers) as response:
-            return await response.text()
+        print(url)
+        async with self.get(url, cookies=cookies, headers=headers, params=params) as response:
+            return json.loads(await response.text())
 
 async def main():
     async with RootMeAPI('365797_298ddfe31e07546808d7714063b2c88e7f92237c5d9118279c65f345d0261162') as api:
 
-        Base.metadata.create_all(api.db)
 
-        challenge5 = json.loads(await api.challenge(5))[0]
-        print(challenge5)
+        # await api.loadAllChallenges()
+        # print('all challenges are loaded')
 
-        user = json.loads(await api.user(1))
-        print(user)
+        print(await api.loadUser('dvorhack'))
 
-        with Session(api.db) as session:
-            user1 = User(
-                id = user['id_auteur'],
-                name = user['nom'],
-                rang = user['rang'],
-            )
-            chall5 = Challenge(
-                id = challenge5['id_trad'],
-                title = challenge5['titre'],
-                score = challenge5['score'],
-            )
+        # challenge5 = json.loads(await api.challenge(5))[0]
+        # print(challenge5)
 
-            user1.challenges.append(chall5)
+        # user = json.loads(await api.user(1))
+        # print(user)
 
-            session.add_all([user1, chall5])
-            session.commit()
-
-asyncio.run(main())
+if __name__ == "__main__":        
+    asyncio.run(main())
