@@ -1,5 +1,5 @@
 import discord
-from discord.ext import tasks, commands
+from discord.ext import tasks, commands, tasks
 from discord import app_commands
 import os, json
 from typing import List, Optional
@@ -9,20 +9,10 @@ import traceback
 from db_manager import DBManager
 from rm_api import RootMeAPI
 import asyncio
+import utils
 
-class MyCog(commands.Cog):
-    def __init__(self):
-        self.index = 0
-        self.printer.start()
-
-    def cog_unload(self):
-        self.printer.cancel()
-
-    @tasks.loop(seconds=5.0)
-    async def printer(self):
-        print(self.index)
-        self.index += 1
-
+class InitNotDone(commands.CheckFailure):
+    pass
 
 class MultipleUserButton(discord.ui.Select):
     def __init__(self, users):
@@ -66,10 +56,39 @@ class CustomBot(commands.Bot):
         self.db_pool = db_pool
         self.api = api
         self.testing_guild_id = testing_guild_id
-        self.bot_channel_id = bot_channel_id
+        self.bot_channel_id = int(bot_channel_id)
         self.initial_extensions = initial_extensions
+        self.init_done = False
+
+    async def init_db(self) -> None:
+        """Checks if the database seems populated or not (first run)"""
+        await self.wait_until_ready()
+        print("Starting...")
+        channel = self.get_channel(self.bot_channel_id)
+
+        # await self.db_pool.create_scoreboard('global')
+        # print('Nombre chall',self.db_pool.count_challenges())
+        #if self.db_pool.count_challenges() < 450:
+        
+        await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
+        await utils.init_start_msg(channel)
+        await self.api.loadAllChallenges()
+        await utils.init_end_msg(channel)
+        await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
+
+        self.init_done = True
+
+    
+
 
     def add_commands(self):
+
+        @self.check
+        def is_init_done(ctx):
+            if not self.init_done:
+                raise InitNotDone()
+            return self.init_done
+
         @self.hybrid_command(name="ping", description="lol")
         async def ping(ctx):
             await ctx.send("pong")
@@ -117,22 +136,16 @@ class CustomBot(commands.Bot):
                     fmt += f'{u}\n'
                 await ctx.send(fmt)
 
-        
-
-        @self.tree.command(
-            name="commandname",
-            description="My first application Command",
-            guild=discord.Object(id=self.testing_guild_id)
-        )
-        async def first_command(interaction):
-            await interaction.response.send_message("Hello!")
-
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'
             view = MultipleUserFoundView(channel.message.channel, auteurs, self.api)
             await channel.send(message, view=view)
 
     async def on_command_error(self, ctx: commands.Context, error):
+        if isinstance(error, InitNotDone):
+            await utils.init_not_done_msg(ctx)
+            return
+
         debug = self.get_channel(int(self.bot_channel_id))
         formatted_lines = traceback.format_exception(type(error), error, error.__traceback__)
         traceback_str = ''.join(formatted_lines)
@@ -144,10 +157,10 @@ class CustomBot(commands.Bot):
             printed += size
 
     async def on_ready(self):
-        debug = self.get_channel(int(self.bot_channel_id))
+        debug = self.get_channel(self.bot_channel_id)
         print("Bot ready")
-        await debug.send("Bot ready")
-        await self.change_presence(status=discord.Status.online, activity=discord.Game("Hacking stuff..."))
+        # await debug.send("Bot ready")
+        # await self.change_presence(status=discord.Status.online, activity=discord.Game("Hacking stuff..."))
 
     async def sync_guid(self):
         if self.testing_guild_id:
@@ -174,29 +187,7 @@ class CustomBot(commands.Bot):
         # This would also be a good place to connect to our database and
         # load anything that should be in memory prior to handling events.
 
+    async def start(self, *args, **kwargs):
+        self.loop.create_task(self.init_db())
 
-
-# intents = discord.Intents.default()
-# intents.message_content = True
-
-# bot = commands.Bot(command_prefix='!', intents=intents)
-
-# @bot.hybrid_command()
-# async def test(ctx):
-#     await ctx.send("This is a hybrid command!")
-
-# @bot.command()
-# async def getguild(ctx):
-#     id = ctx.message.guild.id
-#     await ctx.send(f"guild id = {id}")
-
-# @bot.event
-# async def on_ready():
-#     await bot.tree.sync(guild=discord.Object(id=1144008566957690990))
-#     await bot.change_presence(activity=discord.Game(name="Use the /help command!"))
-#     print("Ready!")
-
-# load_dotenv()
-# bot.run(os.getenv('ROOTME_API'))
-
-
+        await super().start(*args, **kwargs)

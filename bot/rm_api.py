@@ -89,7 +89,9 @@ async def main():
         # await api.loadAllChallenges()
         # print('all challenges are loaded')
 
-        print(await api.loadUser('dvorhack'))
+        print(await api.fetchChallenge(2928))
+
+        # print(await api.loadUser('dvorhack'))
 
         # challenge5 = json.loads(await api.challenge(5))[0]
         # print(challenge5)
