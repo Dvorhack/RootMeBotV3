@@ -37,25 +37,29 @@ class RootMeAPI(aiohttp.ClientSession):
     async def loadChallenge(self, idx):
         x = self.db.getChallengeById(idx)
         if x is not None:
+            # print(f"{x} already loaded in db")
             return
 
         chall_data = await self.fetchChallenge(idx)
-        self.db.newChallenge(chall_data)
+        try:
+            self.db.newChallenge(chall_data)
+        except:
+            print(f"{chall_data = }")
     
     async def loadAllChallenges(self):
         start = 0
         while True:
-            data =  await self.fetch(f"{self.BASE_API}/challenges/?debut_challenges={start}")
+            data = await self.fetch(f"{self.BASE_API}/challenges/?debut_challenges={start}")
             challenges, next = data[0], data[-1]
             start = int(next['href'].split('=')[1])
 
-
+            # print(challenges)
             for idx, chall in challenges.items():
                 await self.loadChallenge(chall['id_challenge'])
 
             if next['rel'] == 'previous':
                 break
-                
+
 
     async def loadUser(self, name = None, idx = None):
         if name is None and idx is None:
@@ -69,11 +73,11 @@ class RootMeAPI(aiohttp.ClientSession):
                 raise Exception(f'User {name} got multiple result')
             user = user['0']
         
-        user_data = await self.fetchUser(user['id_auteur'])
-        print(user_data)
-        self.db.newUser(user_data)
+        # user_data = await self.fetchUser(user['id_auteur'])
+        print(user)
+        await self.db.newUser(user)
     
-    async def fetch(self, url, params = None):
+    async def fetch(self, url, params=None):
         cookies = {"api_key": self.api_key}
         headers = {
             'User-Agent': 'toto'

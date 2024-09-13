@@ -23,12 +23,15 @@ class Solve(Base):
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
+    # id: Mapped[int]
     name: Mapped[str] = mapped_column(String(30))
     score: Mapped[int]
     challenges: Mapped[List["Solve"]] = relationship(back_populates="user")
+    # challenges: Mapped[List["Solve"]] = mapped_column(ForeignKey("challenge.id"), primary_key=True)
     
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
+        # return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
+        return f"User(id={self.id!r}, name={self.name!r})"
 
 class Challenge(Base):
     __tablename__ = "challenges"
@@ -79,7 +82,7 @@ class DBManager():
         return x
     
 
-    def newUser(self, user_data):
+    async def newUser(self, user_data):
         with Session(self.engine) as session:
             user = User(
                 id = user_data['id_auteur'],
@@ -92,6 +95,7 @@ class DBManager():
                 chall_obj = self.getChallengeById(chall['id_challenge'])
                 if chall_obj is None:
                     raise Exception(f"Challenge {chall} solved by {user} doesn't exist in db")
+                print(f"Adding solved challenge {chall_obj.title}")
                 
                 solve = Solve(date=chall['date'])
                 solve.challenge = chall_obj
