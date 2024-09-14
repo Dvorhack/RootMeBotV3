@@ -10,7 +10,7 @@ class RootMeAPI(aiohttp.ClientSession):
 
         self.BASE_API = 'https://api.www.root-me.org/'
         self.api_key = api_key
-        self.db = DBManager()
+        self.db = DBManager('test.db')
     
     async def fetchChallenge(self, idx):
         chall = await self.fetch(f"{self.BASE_API}/challenges/{idx}")

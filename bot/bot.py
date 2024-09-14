@@ -10,9 +10,8 @@ from db_manager import DBManager
 from rm_api import RootMeAPI
 import asyncio
 import utils
+from errors import *
 
-class InitNotDone(commands.CheckFailure):
-    pass
 
 class MultipleUserButton(discord.ui.Select):
     def __init__(self, users):
@@ -96,14 +95,11 @@ class CustomBot(commands.Bot):
                 raise InitNotDone()
             return self.init_done
 
-        @self.hybrid_command(name="ping", description="lol")
-        async def ping(ctx: commands.Context):
-            await ctx.send("pong")
+        @self.hybrid_command(name="who_solved", description="lol")
+        async def who_solved(ctx: commands.Context, name):
+            chall_name, solvers = self.db_pool.who_solved(name)
+            await utils.who_solved_msg(ctx, chall_name, solvers)
 
-
-        @self.hybrid_command(name="pong", description="lol")
-        async def ping(ctx: commands.Context):
-            await ctx.send("ping")
 
         @self.hybrid_command(name="sync", description="lol")
         async def sync(ctx: commands.Context):
@@ -113,10 +109,7 @@ class CustomBot(commands.Bot):
         @self.hybrid_command(name="scoreboard", description="lol")
         async def scoreboard(ctx: commands.Context):
             users = self.db_pool.getAllUsers()
-            fmt = ''
-            for u in users:
-                fmt += f'{u[0]} has {u[1]} points\n'
-            await ctx.send(fmt)
+            await utils.scoreboard_msg(ctx, users)
 
 
         @self.hybrid_command(name="add_user", description="lol")
@@ -124,7 +117,9 @@ class CustomBot(commands.Bot):
             print(type(ctx))
             await ctx.defer()
             users = await self.api.fetchUserByName(name)
-            if len(users) > 1:
+            if len(users) > 25:
+                raise TooManyUsers(name, name=name)
+            elif len(users) > 1:
                 await self.possible_users(ctx, users.values())
             elif len(users) == 1:
                 print(users)
@@ -155,6 +150,10 @@ class CustomBot(commands.Bot):
     async def on_command_error(self, ctx: commands.Context, error):
         if isinstance(error, InitNotDone):
             await utils.init_not_done_msg(ctx)
+            return
+        
+        if isinstance(error, TooManyUsers):
+            await utils.too_many_users_msg(ctx, error.name)
             return
 
         debug = self.get_channel(int(self.bot_channel_id))

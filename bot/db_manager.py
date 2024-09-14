@@ -5,7 +5,7 @@ import sqlalchemy
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 
-
+from errors import *
 
 class Base(DeclarativeBase):
     pass
@@ -19,12 +19,6 @@ class Solve(Base):
     user: Mapped["User"] = relationship(back_populates="challenges")
     challenge: Mapped["Challenge"] = relationship(back_populates="users")
 
-association_scoreboard_users = Table(
-    "association_scoreboard_users",
-    Base.metadata,
-    Column("scoreboard_id", ForeignKey("scoreboards.id"), primary_key=True),
-    Column("user_id", ForeignKey("users.id"), primary_key=True),
-)
 
 class User(Base):
     __tablename__ = "users"
@@ -50,21 +44,15 @@ class Challenge(Base):
     def __repr__(self) -> str:
         return f"Challenge(id={self.id!r}, title={self.title!r})"
 
-
-class Scoreboard(Base):
-    __tablename__ = "scoreboards"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str]
-    users: Mapped[List["User"]] = relationship(secondary=association_scoreboard_users)
-    def __repr__(self) -> str:
-        return f"Scoreboard(id={self.id!r}, title={self.title!r}, {[x.name for x in self.users]})"
+Users = List[User]
+Challenges = List[Challenge]
 
 class DBManager():
     def __init__(self, db_name) -> None:
         self.engine = create_engine(f"sqlite:///{db_name}", echo=False)
         Base.metadata.create_all(self.engine)
 
-    def getUserById(self, idx):
+    def getUserById(self, idx) -> User:
         x = self.execute(select(User).where(User.id == idx))
         if len(x) == 1:
             return x[0]
@@ -73,18 +61,27 @@ class DBManager():
         else:
             raise Exception(f"Database corrupted: multiple users with id {idx}")
         
-    def getUserByName(self, name):
+    def getUserByName(self, name) -> User:
         x = self.execute(select(User).where(User.name.ilike(f"%{name}%")))
         return x
     
-    def getScoreboardByName(self, name):
-        x = self.execute(select(Scoreboard).where(Scoreboard.title.ilike(f"%{name}%")))
+    def getChallengeByName(self, name) -> Challenge:
+        with Session(self.engine) as session:
+            x = session.scalars(select(Challenge).where(Challenge.title.ilike(f"%{name}%"))).all()
+        if len(x) == 1:
+            return x[0]
+        elif len(x) == 0:
+            raise ChallengeNotFound(name, name=name)
+        else:
+            raise FoundMultipleChallenges(name, name=name)
+    
+        
+    def getAllUsers(self)-> Users:
+        with Session(self.engine) as session:
+            x = session.scalars(select(User)).all()
         return x
         
-    def getAllUsers(self):
-        return self.execute(select(User.name, User.score))
-        
-    def getChallengeById(self, idx):
+    def getChallengeById(self, idx) -> Challenge:
         x = self.execute(select(Challenge).where(Challenge.id == idx))
         if len(x) == 1:
             return x[0][0]
@@ -95,6 +92,22 @@ class DBManager():
     
     def getChallengeByIdBatch(self, ids):
         return self.execute(select(Challenge).where(Challenge.id.in_(ids)))
+    
+    def who_solved(self, name):
+        with Session(self.engine) as session:
+            x = session.scalars(select(Challenge).where(Challenge.title.ilike(f"%{name}%"))).all()
+            if len(x) == 0:
+                raise ChallengeNotFound(name, name=name)
+            elif len(x) > 1:
+                raise FoundMultipleChallenges(name, name=name)
+            
+            chall = x[0]
+            solvers = []
+            for s in chall.users:
+                solvers.append(s.user)
+        return chall.title, solvers
+
+
     
     def execute(self, stmt: sqlalchemy.sql.expression.Select) -> sqlalchemy.engine.CursorResult:
         with Session(self.engine) as session:
@@ -144,34 +157,22 @@ class DBManager():
             session.add_all([chall5])
             session.commit()
 
-    def createScoreboard(self, name):
-        with Session(self.engine) as session:
-            sc = Scoreboard(
-                title = name
-            )
-
-            session.add_all([sc])
-            session.commit()
-    
-    def addUserToScoreboard(self, user_name, scoreboard_name):
-
-        with Session(self.engine) as session:
-            stmt = select(User).where(User.name.ilike(f"%{user_name}%"))
-            u = session.execute(stmt).first()[0]
-
-            stmt = select(Scoreboard).where(Scoreboard.title.ilike(f"%{scoreboard_name}%"))
-            sc = session.execute(stmt).first()[0]
-            sc.users.append(u)
-            print(u, sc)
 
     
 if __name__ == "__main__":
     db = DBManager('test2.db')
     
-    db.newUser({'id_auteur':'2345' , 'score':'14050','nom':'dvorhack', 'validations': []})
-    db.newUser({'id_auteur':'2346' , 'score':'14050','nom':'sdvsdvdvo', 'validations': []})
+    # db.newUser({'id_auteur':'2345' , 'score':'14050','nom':'dvorhack', 'validations': []})
+    # db.newUser({'id_auteur':'2346' , 'score':'14050','nom':'sdvsdvdvo', 'validations': []})
 
-    db.createScoreboard('global')
+    # db.createScoreboard('global')
+
+    # print(db.getScoreboardByName('glo'))
+
+    users = db.getAllUsers()
+
+    for u in users.sort(key=lambda x: x.score, reverse=True):
+        print(u)
 
 
-    db.addUserToScoreboard('dvo', 'global')
+    # db.addUserToScoreboard('dvo', 'global')
