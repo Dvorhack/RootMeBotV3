@@ -46,7 +46,7 @@ async def main():
     # We also have our bot, which depends on both of these.
 
 
-    load_dotenv()
+    load_dotenv("./.env")
     ROOTME_API = os.getenv('ROOTME_API')
     DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
     GUILD_ID = os.getenv('GUILD_ID')

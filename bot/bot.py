@@ -81,6 +81,13 @@ class CustomBot(commands.Bot):
     
 
 
+        # self.api.loadAllChallenges()
+
+    async def start(self, *args):
+        await self.api.loadAllChallenges()
+        return await super().start(*args)
+
+
     def add_commands(self):
 
         @self.check
@@ -90,21 +97,21 @@ class CustomBot(commands.Bot):
             return self.init_done
 
         @self.hybrid_command(name="ping", description="lol")
-        async def ping(ctx):
+        async def ping(ctx: commands.Context):
             await ctx.send("pong")
 
 
         @self.hybrid_command(name="pong", description="lol")
-        async def ping(ctx):
+        async def ping(ctx: commands.Context):
             await ctx.send("ping")
 
         @self.hybrid_command(name="sync", description="lol")
-        async def sync(ctx):
+        async def sync(ctx: commands.Context):
             await self.sync_guid()
             await ctx.send("Synced !")
 
         @self.hybrid_command(name="scoreboard", description="lol")
-        async def scoreboard(ctx):
+        async def scoreboard(ctx: commands.Context):
             users = self.db_pool.getAllUsers()
             fmt = ''
             for u in users:
@@ -113,7 +120,9 @@ class CustomBot(commands.Bot):
 
 
         @self.hybrid_command(name="add_user", description="lol")
-        async def add_user(ctx, name):
+        async def add_user(ctx: commands.Context, name):
+            print(type(ctx))
+            await ctx.defer()
             users = await self.api.fetchUserByName(name)
             if len(users) > 1:
                 await self.possible_users(ctx, users.values())
@@ -121,12 +130,14 @@ class CustomBot(commands.Bot):
                 print(users)
                 await self.api.loadUser(idx=int(users['0']['id_auteur']))
                 await ctx.reply(f"{users['0']['nom']} added")
+                # asyncio.sleep()
+                # await ctx.send(f"{users['0']['nom']} added")
             else:
                 await ctx.reply(f"User {name} not found")
 
 
         @self.hybrid_command(name="profile", description="lol")
-        async def profile(ctx, name):
+        async def profile(ctx: commands.Context, name):
             users = await self.api.fetchUserByName(name)
             if len(users) > 1:
                 await self.possible_users(ctx, users.values())
