@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 
 from errors import *
@@ -62,7 +62,8 @@ class DBManager():
             raise Exception(f"Database corrupted: multiple users with id {idx}")
         
     def getUserByName(self, name) -> User:
-        x = self.execute(select(User).where(User.name.ilike(f"%{name}%")))
+        with Session(self.engine) as session:
+            x = session.scalars(select(User).where(User.name.ilike(f"%{name}%"))).all()
         return x
     
     def getChallengeByName(self, name) -> Challenge:
@@ -107,15 +108,17 @@ class DBManager():
                 solvers.append(s.user)
         return chall.title, solvers
 
-
+    def get_stats(self, user_id):
+        with Session(self.engine) as session:
+            global_stats = session.query(Challenge.category, func.count(Challenge.id)).group_by(Challenge.category).all()
+            user_stats = session.query(Challenge.category, func.count(Challenge.id), func.sum(Challenge.score)).join(Solve, Challenge.id == Solve.challenge_id).filter(Solve.user_id == user_id).group_by(Challenge.category).all()
+        return global_stats, user_stats
     
     def execute(self, stmt: sqlalchemy.sql.expression.Select) -> sqlalchemy.engine.CursorResult:
         with Session(self.engine) as session:
             x = session.execute(stmt).all()
         return x
     
-
-
     async def newUser(self, user_data):
         if self.getUserById(user_data['id_auteur']) is not None:
             return

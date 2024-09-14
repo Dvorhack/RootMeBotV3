@@ -133,14 +133,28 @@ class CustomBot(commands.Bot):
 
         @self.hybrid_command(name="profile", description="lol")
         async def profile(ctx: commands.Context, name):
-            users = await self.api.fetchUserByName(name)
-            if len(users) > 1:
-                await self.possible_users(ctx, users.values())
-            else:
-                fmt = ''
-                for i, u in users.items():
-                    fmt += f'{u}\n'
-                await ctx.send(fmt)
+            # users = await self.api.fetchUserByName(name)
+            user = self.db_pool.getUserByName(name)[0]
+            print(user, type(user))
+            global_stats, user_stats = self.db_pool.get_stats(user.id)
+            
+            res = {category: {} for category,_ in global_stats}
+            for category, tot_chall in global_stats:
+                try:
+                    solved_chall = next((solved_chall for chall, solved_chall, points in user_stats if chall == category), None)
+                    points = next((points for chall, solved_chall, points in user_stats if chall == category), None)
+                    rate = round(solved_chall/tot_chall*100)
+                    res[category].update({"tot_chall" : tot_chall, 
+                                        "solved_chall" : solved_chall,
+                                        "points" : points,
+                                        "rate" : rate})
+                except TypeError: 
+                    res[category].update({"tot_chall" : tot_chall, 
+                                        "solved_chall" : 0,
+                                        "points" : 0,
+                                        "rate" : 0})
+                    
+            await utils.profile(ctx, user, res)
 
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'
