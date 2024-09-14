@@ -19,6 +19,12 @@ class Solve(Base):
     user: Mapped["User"] = relationship(back_populates="challenges")
     challenge: Mapped["Challenge"] = relationship(back_populates="users")
 
+association_scoreboard_users = Table(
+    "association_scoreboard_users",
+    Base.metadata,
+    Column("scoreboard_id", ForeignKey("scoreboards.id"), primary_key=True),
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -30,8 +36,7 @@ class User(Base):
     # challenges: Mapped[List["Solve"]] = mapped_column(ForeignKey("challenge.id"), primary_key=True)
     
     def __repr__(self) -> str:
-        # return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
-        return f"User(id={self.id!r}, name={self.name!r})"
+        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.score!r})"
 
 class Challenge(Base):
     __tablename__ = "challenges"
@@ -44,12 +49,19 @@ class Challenge(Base):
     users: Mapped[List["Solve"]] = relationship(back_populates="challenge")
     def __repr__(self) -> str:
         return f"Challenge(id={self.id!r}, title={self.title!r})"
-    
 
+
+class Scoreboard(Base):
+    __tablename__ = "scoreboards"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    users: Mapped[List["User"]] = relationship(secondary=association_scoreboard_users)
+    def __repr__(self) -> str:
+        return f"Scoreboard(id={self.id!r}, title={self.title!r}, {[x.name for x in self.users]})"
 
 class DBManager():
-    def __init__(self) -> None:
-        self.engine = create_engine("sqlite:///test.db", echo=False)
+    def __init__(self, db_name) -> None:
+        self.engine = create_engine(f"sqlite:///{db_name}", echo=False)
         Base.metadata.create_all(self.engine)
 
     def getUserById(self, idx):
@@ -60,6 +72,14 @@ class DBManager():
             return None
         else:
             raise Exception(f"Database corrupted: multiple users with id {idx}")
+        
+    def getUserByName(self, name):
+        x = self.execute(select(User).where(User.name.ilike(f"%{name}%")))
+        return x
+    
+    def getScoreboardByName(self, name):
+        x = self.execute(select(Scoreboard).where(Scoreboard.title.ilike(f"%{name}%")))
+        return x
         
     def getAllUsers(self):
         return self.execute(select(User.name, User.score))
@@ -82,7 +102,11 @@ class DBManager():
         return x
     
 
+
     async def newUser(self, user_data):
+        if self.getUserById(user_data['id_auteur']) is not None:
+            return
+
         with Session(self.engine) as session:
             user = User(
                 id = user_data['id_auteur'],
@@ -120,5 +144,34 @@ class DBManager():
             session.add_all([chall5])
             session.commit()
 
+    def createScoreboard(self, name):
+        with Session(self.engine) as session:
+            sc = Scoreboard(
+                title = name
+            )
+
+            session.add_all([sc])
+            session.commit()
+    
+    def addUserToScoreboard(self, user_name, scoreboard_name):
+
+        with Session(self.engine) as session:
+            stmt = select(User).where(User.name.ilike(f"%{user_name}%"))
+            u = session.execute(stmt).first()[0]
+
+            stmt = select(Scoreboard).where(Scoreboard.title.ilike(f"%{scoreboard_name}%"))
+            sc = session.execute(stmt).first()[0]
+            sc.users.append(u)
+            print(u, sc)
+
+    
 if __name__ == "__main__":
-    pass
+    db = DBManager('test2.db')
+    
+    db.newUser({'id_auteur':'2345' , 'score':'14050','nom':'dvorhack', 'validations': []})
+    db.newUser({'id_auteur':'2346' , 'score':'14050','nom':'sdvsdvdvo', 'validations': []})
+
+    db.createScoreboard('global')
+
+
+    db.addUserToScoreboard('dvo', 'global')
