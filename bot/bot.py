@@ -70,8 +70,8 @@ class CustomBot(commands.Bot):
         #if self.db_pool.count_challenges() < 450:
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
-        await utils.init_start_msg(channel)
-        await self.api.loadAllChallenges()
+        # await utils.init_start_msg(channel)
+        # await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -124,7 +124,7 @@ class CustomBot(commands.Bot):
             elif len(users) == 1:
                 print(users)
                 await self.api.loadUser(idx=int(users['0']['id_auteur']))
-                await ctx.reply(f"{users['0']['nom']} added")
+                await utils.added_ok(ctx, users['0']['nom'])
                 # asyncio.sleep()
                 # await ctx.send(f"{users['0']['nom']} added")
             else:
