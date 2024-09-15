@@ -108,11 +108,27 @@ class DBManager():
                 solvers.append(s.user)
         return chall.title, solvers
 
-    def get_stats(self, user_id):
+    def getStats(self, user_id):
         with Session(self.engine) as session:
-            global_stats = session.query(Challenge.category, func.count(Challenge.id)).group_by(Challenge.category).all()
             user_stats = session.query(Challenge.category, func.count(Challenge.id), func.sum(Challenge.score)).join(Solve, Challenge.id == Solve.challenge_id).filter(Solve.user_id == user_id).group_by(Challenge.category).all()
-        return global_stats, user_stats
+            global_stats = session.query(Challenge.category, func.count(Challenge.id)).group_by(Challenge.category).all()
+
+        res = {category: {} for category,_ in global_stats}
+        for category, tot_chall in global_stats:
+            try:
+                solved_chall = next((solved_chall for chall, solved_chall, points in user_stats if chall == category), None)
+                points = next((points for chall, solved_chall, points in user_stats if chall == category), None)
+                rate = round(solved_chall/tot_chall*100)
+                res[category].update({"tot_chall" : tot_chall, 
+                                    "solved_chall" : solved_chall,
+                                    "points" : points,
+                                    "rate" : rate})
+            except TypeError: 
+                res[category].update({"tot_chall" : tot_chall, 
+                                    "solved_chall" : 0,
+                                    "points" : 0,
+                                    "rate" : 0})
+        return res
     
     def execute(self, stmt: sqlalchemy.sql.expression.Select) -> sqlalchemy.engine.CursorResult:
         with Session(self.engine) as session:

@@ -135,26 +135,19 @@ class CustomBot(commands.Bot):
         async def profile(ctx: commands.Context, name):
             # users = await self.api.fetchUserByName(name)
             user = self.db_pool.getUserByName(name)[0]
-            print(user, type(user))
-            global_stats, user_stats = self.db_pool.get_stats(user.id)
-            
-            res = {category: {} for category,_ in global_stats}
-            for category, tot_chall in global_stats:
-                try:
-                    solved_chall = next((solved_chall for chall, solved_chall, points in user_stats if chall == category), None)
-                    points = next((points for chall, solved_chall, points in user_stats if chall == category), None)
-                    rate = round(solved_chall/tot_chall*100)
-                    res[category].update({"tot_chall" : tot_chall, 
-                                        "solved_chall" : solved_chall,
-                                        "points" : points,
-                                        "rate" : rate})
-                except TypeError: 
-                    res[category].update({"tot_chall" : tot_chall, 
-                                        "solved_chall" : 0,
-                                        "points" : 0,
-                                        "rate" : 0})
+            user_stats = self.db_pool.getStats(user.id)
                     
-            await utils.profile(ctx, user, res)
+            await utils.profile(ctx, user, user_stats)
+
+        @self.hybrid_command(name="compare", description="lol")
+        async def compare(ctx: commands.Context, user1, user2):
+            user1 = self.db_pool.getUserByName(user1)[0]
+            user2 = self.db_pool.getUserByName(user2)[0]
+
+            user1_stats = self.db_pool.getStats(user1.id)
+            user2_stats = self.db_pool.getStats(user2.id)
+
+            await utils.compare_graph(ctx, user1, user1_stats, user2, user2_stats)
 
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'

@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import io
 from PIL import Image, ImageDraw, ImageFont
 import requests
+import numpy as np
+
 
 # from database.manager import DatabaseManager
 
@@ -172,4 +174,79 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
     embed.set_image(url="attachment://score.png")
     await ctx.send(embed=embed, file=file)
 
+async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_stats) -> None:
+
+    def make_chart(profile, inverse):
+
+        y_pos = - np.arange(len(categories))*0.5
+        fig, ax = plt.subplots(figsize=(5, 10))
+        fig.patch.set_facecolor("#2b2d31")
+        bar_width = 0.3
+        sens = 1
+        color = '#feb800'
+        ha = 'right'
+
+        if inverse :
+            profile = [-x for x in profile]
+            sens=-1
+            color = '#37a7e6'
+            ha = 'left'
+
+        ax.barh(y_pos, profile, bar_width, color=color, align='center')
+
+        for i, v in enumerate(profile):
+            if abs(v) < 20 : label_offset = -15
+            else : label_offset = 2
+            ax.text(v-sens*label_offset, y_pos[i]-0.02, f"{abs(v)}%", verticalalignment='center', horizontalalignment=ha, color='white', fontweight='bold', fontsize=20)
+
+        ax.axis('off')
+        plt.tight_layout(pad=0)
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        img = Image.open(buf)
+        return img
+
+    def txt(text_list, img_height):
+        image = Image.new('RGB', (270, img_height), color='#2b2d31')
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=30)
+
+        y = 55
+        line_spacing = 86
+
+        for text in text_list:
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            x = (270 - text_width) / 2
+            draw.text((x, y), text, font=font, fill='white')
+            y += line_spacing
+        return image
+
+    def img_concat_h(im1, im2, im3):
+        res = Image.new('RGB', (im1.width + im2.width + im3.width, max(im1.height, im2.height, im3.height)))
+        res.paste(im1, (0, 0))
+        res.paste(im2, (im1.width, 0))
+        res.paste(im3, (im1.width + im2.width, 0))
+        return res
     
+    categories, profile1, profile2 = [], [], []
+
+    for cat, _ in user1_stats.items():
+        categories.append(cat)
+        profile1.append(user1_stats[cat]['rate'])
+        profile2.append(user2_stats[cat]['rate'])
+
+    prof1 = make_chart(profile1, 1)
+    prof2 = make_chart(profile2, 0)
+
+    title = txt(categories, prof1.height)
+
+    full = img_concat_h(prof1, title, prof2)
+    full.save('resources/test.png')
+
+    embed = discord.Embed(color=Color.blue(), title=f"{user1.name} VS {user2.name}", description=f":blue_circle: **{user1.name}** - *Score : {user1.score}*\n:orange_circle: **{user2.name}** - *Score : {user2.score}*")
+ 
+    file = discord.File('resources/test.png', filename='test.png')
+    embed.set_image(url='attachment://test.png')
+    await ctx.send(embed=embed, file=file)  
