@@ -176,7 +176,7 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
 
 async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_stats) -> None:
 
-    def make_chart(profile, inverse):
+    def create_bar_chart(profile, inverse):
 
         y_pos = - np.arange(len(categories))*0.5
         fig, ax = plt.subplots(figsize=(5, 10))
@@ -207,7 +207,7 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
         img = Image.open(buf)
         return img
 
-    def txt(text_list, img_height):
+    def categories_image(text_list, img_height):
         image = Image.new('RGB', (270, img_height), color='#2b2d31')
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=30)
@@ -232,18 +232,18 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
     
     categories, profile1, profile2 = [], [], []
 
-    for cat, _ in user1_stats.items():
-        categories.append(cat)
-        profile1.append(user1_stats[cat]['rate'])
-        profile2.append(user2_stats[cat]['rate'])
+    for categorie, _ in user1_stats.items():
+        categories.append(categorie)
+        profile1.append(user1_stats[categorie]['rate'])
+        profile2.append(user2_stats[categorie]['rate'])
 
-    prof1 = make_chart(profile1, 1)
-    prof2 = make_chart(profile2, 0)
+    profile1_chart = create_bar_chart(profile1, 1)
+    profile2_chart = create_bar_chart(profile2, 0)
 
-    title = txt(categories, prof1.height)
+    categories_title = categories_image(categories, profile1_chart.height)
 
-    full = img_concat_h(prof1, title, prof2)
-    full.save('resources/test.png')
+    full_image = img_concat_h(profile1_chart, categories_title, profile2_chart)
+    full_image.save('resources/test.png')
 
     embed = discord.Embed(color=Color.blue(), title=f"{user1.name} VS {user2.name}", description=f":blue_circle: **{user1.name}** - *Score : {user1.score}*\n:orange_circle: **{user2.name}** - *Score : {user2.score}*")
  

@@ -70,8 +70,8 @@ class CustomBot(commands.Bot):
         #if self.db_pool.count_challenges() < 450:
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
-        # await utils.init_start_msg(channel)
-        # await self.api.loadAllChallenges()
+        await utils.init_start_msg(channel)
+        await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -113,36 +113,56 @@ class CustomBot(commands.Bot):
 
 
         @self.hybrid_command(name="add_user", description="lol")
-        async def add_user(ctx: commands.Context, name):
+        async def add_user(ctx: commands.Context, input):
             print(type(ctx))
             await ctx.defer()
-            users = await self.api.fetchUserByName(name)
-            if len(users) > 25:
-                raise TooManyUsers(name, name=name)
-            elif len(users) > 1:
-                await self.possible_users(ctx, users.values())
-            elif len(users) == 1:
+
+            if input.isdigit():
+                users = await self.api.fetchUser(input)
                 print(users)
-                await self.api.loadUser(idx=int(users['0']['id_auteur']))
-                await utils.added_ok(ctx, users['0']['nom'])
-                # asyncio.sleep()
-                # await ctx.send(f"{users['0']['nom']} added")
-            else:
-                await ctx.reply(f"User {name} not found")
+                try :
+                    await self.api.loadUser(idx=input)
+                    await utils.added_ok(ctx, users['nom'])
+                except :
+                    await ctx.reply(f"User with ID {input} not found")
+
+            else :
+                users = await self.api.fetchUserByName(input)
+
+                if len(users) > 25:
+                    raise TooManyUsers(input, name=input)
+                elif len(users) > 1:
+                    await self.possible_users(ctx, users.values())
+                elif len(users) == 1:
+                    await self.api.loadUser(idx=int(users['0']['id_auteur']))
+                    await utils.added_ok(ctx, users['0']['nom'])
+                    # asyncio.sleep()
+                    # await ctx.send(f"{users['0']['nom']} added")
+                else:
+                    await ctx.reply(f"User {input} not found")
 
 
         @self.hybrid_command(name="profile", description="lol")
         async def profile(ctx: commands.Context, name):
-            # users = await self.api.fetchUserByName(name)
-            user = self.db_pool.getUserByName(name)[0]
+            if name.isdigit():
+                user = self.db_pool.getUserById(name)[0]
+            else : 
+                user = self.db_pool.getUserByName(name)[0]
             user_stats = self.db_pool.getStats(user.id)
                     
             await utils.profile(ctx, user, user_stats)
 
         @self.hybrid_command(name="compare", description="lol")
         async def compare(ctx: commands.Context, user1, user2):
-            user1 = self.db_pool.getUserByName(user1)[0]
-            user2 = self.db_pool.getUserByName(user2)[0]
+            if user1.isdigit():
+                user1 = self.db_pool.getUserById(user1)[0]
+            else : 
+                user1 = self.db_pool.getUserByName(user1)[0]
+
+            if user2.isdigit():
+                user2 = self.db_pool.getUserById(user2)[0]
+            else : 
+                user2 = self.db_pool.getUserByName(user2)[0]
 
             user1_stats = self.db_pool.getStats(user1.id)
             user2_stats = self.db_pool.getStats(user2.id)

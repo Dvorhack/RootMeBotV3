@@ -28,7 +28,6 @@ class RootMeAPI(aiohttp.ClientSession):
         users =  await self.fetch(f"{self.BASE_API}/auteurs", params={'nom': name})
         if isinstance(users, list):
             users = users[0]
-
         if 'error' in users.keys():
             return []
         else:
@@ -74,7 +73,6 @@ class RootMeAPI(aiohttp.ClientSession):
             user = user['0']
         
         # user_data = await self.fetchUser(user['id_auteur'])
-        print(user)
         await self.db.newUser(user)
     
     async def fetch(self, url, params=None):
