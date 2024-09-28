@@ -77,8 +77,25 @@ class CustomBot(commands.Bot):
 
         self.init_done = True
 
-    
 
+    async def cron_check_challs(self) -> None:
+        """Checks for new challs"""
+
+        await self.wait_until_ready()
+
+        while not self.init_done:
+            await asyncio.sleep(1)
+
+        while True:
+            try:
+                await self.api.loadAllChallenges()
+            except Exception as e:
+                # channel = self.get_channel(self.BOT_CHANNEL)
+                # await utils.panic_message(channel, e, "challs worker")
+                raise e
+            await asyncio.sleep(30)
+
+            print("OK challs")
 
         # self.api.loadAllChallenges()
 
@@ -226,5 +243,6 @@ class CustomBot(commands.Bot):
 
     async def start(self, *args, **kwargs):
         self.loop.create_task(self.init_db())
+        self.loop.create_task(self.cron_check_challs())
 
         await super().start(*args, **kwargs)

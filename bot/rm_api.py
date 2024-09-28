@@ -37,11 +37,12 @@ class RootMeAPI(aiohttp.ClientSession):
         x = self.db.getChallengeById(idx)
         if x is not None:
             # print(f"{x} already loaded in db")
-            return
+            return None
 
         chall_data = await self.fetchChallenge(idx)
         try:
             self.db.newChallenge(chall_data)
+            return chall_data
         except:
             print(f"{chall_data = }")
     
@@ -54,7 +55,9 @@ class RootMeAPI(aiohttp.ClientSession):
 
             # print(challenges)
             for idx, chall in challenges.items():
-                await self.loadChallenge(chall['id_challenge'])
+                new_chall = await self.loadChallenge(chall['id_challenge'])
+                if new_chall:
+                    print(f"new chall: {new_chall["titre"]}")
 
             if next['rel'] == 'previous':
                 break
