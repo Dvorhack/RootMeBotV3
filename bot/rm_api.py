@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 import json
 from db_manager import DBManager
+from constants import DB_NAME
 
 class RootMeAPI(aiohttp.ClientSession):
 
@@ -10,20 +11,20 @@ class RootMeAPI(aiohttp.ClientSession):
 
         self.BASE_API = 'https://api.www.root-me.org/'
         self.api_key = api_key
-        self.db = DBManager('test.db')
-    
+        self.db = DBManager(DB_NAME)
+
     async def fetchChallenge(self, idx):
         chall = await self.fetch(f"{self.BASE_API}/challenges/{idx}")
         if isinstance(chall, list):
             chall = chall[0]
         return chall
-    
+
     async def fetchUser(self, idx):
         user =  await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
         if isinstance(user, list):
             user = user[0]
         return user
-    
+
     async def fetchUserByName(self, name):
         users =  await self.fetch(f"{self.BASE_API}/auteurs", params={'nom': name})
         if isinstance(users, list):
@@ -32,7 +33,7 @@ class RootMeAPI(aiohttp.ClientSession):
             return []
         else:
             return users
-    
+
     async def loadChallenge(self, idx):
         x = self.db.getChallengeById(idx)
         if x is not None:
@@ -45,22 +46,26 @@ class RootMeAPI(aiohttp.ClientSession):
             return chall_data
         except:
             print(f"{chall_data = }")
-    
+
     async def loadAllChallenges(self):
         start = 0
+        new_challs = []
         while True:
             data = await self.fetch(f"{self.BASE_API}/challenges/?debut_challenges={start}")
             challenges, next = data[0], data[-1]
             start = int(next['href'].split('=')[1])
 
             # print(challenges)
-            for idx, chall in challenges.items():
-                new_chall = await self.loadChallenge(chall['id_challenge'])
-                if new_chall:
-                    print(f"new chall: {new_chall["titre"]}")
+            # for idx, chall in challenges.items():
+            #     new_chall = await self.loadChallenge(chall['id_challenge'])
+            #     if new_chall:
+            #         print(f"new chall: {new_chall['titre']}")
 
+            results = await asyncio.gather(*(self.loadChallenge(chall["id_challenge"]) for idx, chall in challenges.items()))
+            new_challs.extend([c for c in results if c is not None])
             if next['rel'] == 'previous':
                 break
+        return new_challs
 
 
     async def loadUser(self, name = None, idx = None):
@@ -74,10 +79,10 @@ class RootMeAPI(aiohttp.ClientSession):
             if len(user)>1:
                 raise Exception(f'User {name} got multiple result')
             user = user['0']
-        
+
         # user_data = await self.fetchUser(user['id_auteur'])
         await self.db.newUser(user)
-    
+
     async def fetch(self, url, params=None):
         cookies = {"api_key": self.api_key}
         headers = {

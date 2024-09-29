@@ -8,6 +8,7 @@ import traceback
 
 from db_manager import DBManager
 from rm_api import RootMeAPI
+from constants import UPDATE_CHALLS_DELAY, UPDATE_SOLVES_DELAY
 import asyncio
 import utils
 from errors import *
@@ -77,7 +78,6 @@ class CustomBot(commands.Bot):
 
         self.init_done = True
 
-
     async def cron_check_challs(self) -> None:
         """Checks for new challs"""
 
@@ -87,17 +87,40 @@ class CustomBot(commands.Bot):
             await asyncio.sleep(1)
 
         while True:
+            await asyncio.sleep(UPDATE_CHALLS_DELAY)
+            try:
+                # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
+                new_challs = await self.api.loadAllChallenges()
+                if len(new_challs):
+                    ...
+                    # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
+            except Exception as e:
+                # channel = self.get_channel(self.BOT_CHANNEL)
+                # await utils.panic_message(channel, e, "challs worker")
+                raise e
+
+            print("OK challs")
+
+    """
+    async def cron_check_solves(self) -> None:
+        \"""Checks for new challs\"""
+
+        await self.wait_until_ready()
+
+        while not self.init_done:
+            await asyncio.sleep(1)
+
+        while True:
+            await asyncio.sleep(UPDATE_SOLVES_DELAY)
             try:
                 await self.api.loadAllChallenges()
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
                 # await utils.panic_message(channel, e, "challs worker")
                 raise e
-            await asyncio.sleep(30)
 
             print("OK challs")
-
-        # self.api.loadAllChallenges()
+    """
 
     async def start(self, *args):
         await self.api.loadAllChallenges()
@@ -122,6 +145,16 @@ class CustomBot(commands.Bot):
         async def sync(ctx: commands.Context):
             await self.sync_guid()
             await ctx.send("Synced !")
+        
+        @self.hybrid_command(name="update_challs", description="commande qu'on va garder ?")
+        async def update_challs(ctx: commands.context):
+            await ctx.defer()
+            # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
+            new_challs = await self.api.loadAllChallenges()
+            if len(new_challs):
+                ...
+                # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
+            await ctx.reply("Challenges updated successfully")
 
         @self.hybrid_command(name="scoreboard", description="lol")
         async def scoreboard(ctx: commands.Context):
