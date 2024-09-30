@@ -57,7 +57,6 @@ async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     message_title = f'**Scoreboard**'
 
     embed = discord.Embed(color=Color.yellow(), title=message_title, description="")
-    embed.add_field(name=" ", value=" ", inline=False)
     embed.set_thumbnail(url="attachment://trophy.png")
     for index, user in enumerate(users):
         if index < 3:
@@ -65,6 +64,28 @@ async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
             embed.add_field(name=f"{medal} {user.name}",value=f"Points: {user.score}",inline=False)
         else :
             embed.add_field(name=f"#{index+1} {user.name}",value=f"Points: {user.score}",inline=False)
+
+    await ctx.send(file=file, embed=embed)
+
+async def today_msg(ctx: commands.Context, users) -> None:
+    medals = {
+        0: "🥇",
+        1: "🥈",
+        2: "🥉"
+    }
+    file = discord.File('resources/calendar.png', filename='calendar.png')  
+
+    users.sort(key=lambda x: x[1], reverse=True)
+    message_title = f'**Daily Scoreboard**'
+
+    embed = discord.Embed(color=Color.yellow(), title=message_title, description="")
+    embed.set_thumbnail(url="attachment://calendar.png")
+    for index, user in enumerate(users):
+        if index < 3:
+            medal = medals.get(index, "")
+            embed.add_field(name=f"{medal} {user[0]}",value=f"Points: {user[1]}",inline=False)
+        else :
+            embed.add_field(name=f"#{index+1} {user[0]}",value=f"Points: {user[1]}",inline=False)
 
     await ctx.send(file=file, embed=embed)
 
