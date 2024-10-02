@@ -36,7 +36,6 @@ class RootMeAPI(aiohttp.ClientSession):
     
     async def updateUser(self, user):
         user_data = await self.fetchUser(user.id)
-        # print(user_data["validations"])
         return self.db.new_solves(user.id, user_data["validations"])
 
     async def loadChallenge(self, idx):
@@ -60,18 +59,11 @@ class RootMeAPI(aiohttp.ClientSession):
             challenges, next = data[0], data[-1]
             start = int(next['href'].split('=')[1])
 
-            # print(challenges)
-            # for idx, chall in challenges.items():
-            #     new_chall = await self.loadChallenge(chall['id_challenge'])
-            #     if new_chall:
-            #         print(f"new chall: {new_chall['titre']}")
-
             results = await asyncio.gather(*(self.loadChallenge(chall["id_challenge"]) for idx, chall in challenges.items()))
             new_challs.extend([c for c in results if c is not None])
             if next['rel'] == 'previous':
                 break
         return new_challs
-
 
     async def loadUser(self, name = None, idx = None):
         if name is None and idx is None:
@@ -85,7 +77,6 @@ class RootMeAPI(aiohttp.ClientSession):
                 raise Exception(f'User {name} got multiple result')
             user = user['0']
 
-        # user_data = await self.fetchUser(user['id_auteur'])
         await self.db.newUser(user)
 
     async def fetch(self, url, params=None):
