@@ -128,7 +128,7 @@ class DBManager():
                         next_user = next_user[0]
                         points_to_next = next_user.score - user.score
                         data_new_solves.append((chall_obj.title, next_user.name, points_to_next, first_blood))
-                        print(f"{data_new_solves = }")
+                        # print(f"{data_new_solves = }")
                     session.add(solve)
             session.commit()
         return data_new_solves

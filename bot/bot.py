@@ -72,7 +72,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        #await self.api.loadAllChallenges()
+        await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -124,7 +124,7 @@ class CustomBot(commands.Bot):
                 # await utils.panic_message(channel, e, "challs worker")
                 raise e
 
-            print("OK challs")
+            print("OK solves")
 
 
     async def start(self, *args):
@@ -181,12 +181,10 @@ class CustomBot(commands.Bot):
 
         @self.hybrid_command(name="add_user", description="lol")
         async def add_user(ctx: commands.Context, input):
-            print(type(ctx))
             await ctx.defer()
 
             if input.isdigit():
                 users = await self.api.fetchUser(input)
-                print(users)
                 try :
                     await self.api.loadUser(idx=input)
                     await utils.added_ok(ctx, users['nom'])

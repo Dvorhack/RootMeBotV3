@@ -59,7 +59,11 @@ class RootMeAPI(aiohttp.ClientSession):
             challenges, next = data[0], data[-1]
             start = int(next['href'].split('=')[1])
 
-            results = await asyncio.gather(*(self.loadChallenge(chall["id_challenge"]) for idx, chall in challenges.items()))
+            # results = await asyncio.gather(*(self.loadChallenge(chall["id_challenge"]) for idx, chall in challenges.items()))
+            results = []
+            for idx, chall in challenges.items():
+                results.append(await self.loadChallenge(chall["id_challenge"]))
+
             new_challs.extend([c for c in results if c is not None])
             if next['rel'] == 'previous':
                 break
