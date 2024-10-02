@@ -72,7 +72,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        await self.api.loadAllChallenges()
+        #await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -174,6 +174,10 @@ class CustomBot(commands.Bot):
             users = self.db_pool.getAllUsers()
             await utils.scoreboard_msg(ctx, users)
 
+        @self.hybrid_command(name="today", description="lol")
+        async def today(ctx: commands.Context):
+            users = self.db_pool.getTodayScoreboard()
+            await utils.today_msg(ctx, users)
 
         @self.hybrid_command(name="add_user", description="lol")
         async def add_user(ctx: commands.Context, input):
@@ -217,6 +221,7 @@ class CustomBot(commands.Bot):
 
         @self.hybrid_command(name="compare", description="lol")
         async def compare(ctx: commands.Context, user1, user2):
+
             if user1.isdigit():
                 user1 = self.db_pool.getUserById(user1)[0]
             else : 
@@ -231,6 +236,8 @@ class CustomBot(commands.Bot):
             user2_stats = self.db_pool.getStats(user2.id)
 
             await utils.compare_graph(ctx, user1, user1_stats, user2, user2_stats)
+
+
 
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'

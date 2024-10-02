@@ -82,6 +82,11 @@ class DBManager():
         with Session(self.engine) as session:
             x = session.scalars(select(User)).all()
         return x
+    
+    def getTodayScoreboard(self):
+        with Session(self.engine) as session:
+            x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(func.date(Solve.date) == date.today()).group_by(User.name).all()
+        return x
         
     def getChallengeById(self, idx) -> Challenge:
         x = self.execute(select(Challenge).where(Challenge.id == idx))
