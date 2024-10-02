@@ -4,6 +4,7 @@ from typing import Optional
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, make_transient
+from datetime import date
 
 from errors import *
 
