@@ -92,6 +92,7 @@ class CustomBot(commands.Bot):
                 # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
                 new_challs = await self.api.loadAllChallenges()
                 if len(new_challs):
+                    print(new_challs)
                     ...
                     # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
@@ -101,9 +102,8 @@ class CustomBot(commands.Bot):
 
             print("OK challs")
 
-    """
     async def cron_check_solves(self) -> None:
-        \"""Checks for new challs\"""
+        """Checks for new challs"""
 
         await self.wait_until_ready()
 
@@ -113,14 +113,19 @@ class CustomBot(commands.Bot):
         while True:
             await asyncio.sleep(UPDATE_SOLVES_DELAY)
             try:
-                await self.api.loadAllChallenges()
+                for user in self.db_pool.getAllUsers():
+                    solves_data = await self.api.updateUser(user)
+                    if solves_data:
+                        print(solves_data)
+                        ...
+                        # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
                 # await utils.panic_message(channel, e, "challs worker")
                 raise e
 
             print("OK challs")
-    """
+
 
     async def start(self, *args):
         await self.api.loadAllChallenges()
@@ -146,7 +151,7 @@ class CustomBot(commands.Bot):
             await self.sync_guid()
             await ctx.send("Synced !")
         
-        @self.hybrid_command(name="update_challs", description="commande qu'on va garder ?")
+        @self.hybrid_command(name="update_challs", description="on garde ou pas ?")
         async def update_challs(ctx: commands.context):
             await ctx.defer()
             # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
@@ -155,6 +160,14 @@ class CustomBot(commands.Bot):
                 ...
                 # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             await ctx.reply("Challenges updated successfully")
+        
+        @self.hybrid_command(name="update_solves", description="on garde ou pas ?")
+        async def update_solves(ctx: commands.context):
+            for user in self.db_pool.getAllUsers():
+                solves_data = await self.api.updateUser(user)
+                if solves_data:
+                    for solve in solves_data:
+                        await ctx.reply(solve)
 
         @self.hybrid_command(name="scoreboard", description="lol")
         async def scoreboard(ctx: commands.Context):
@@ -277,5 +290,6 @@ class CustomBot(commands.Bot):
     async def start(self, *args, **kwargs):
         self.loop.create_task(self.init_db())
         self.loop.create_task(self.cron_check_challs())
+        self.loop.create_task(self.cron_check_solves())
 
         await super().start(*args, **kwargs)

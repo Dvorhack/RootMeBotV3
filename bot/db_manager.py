@@ -3,7 +3,7 @@ from typing import Optional
 
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, make_transient
 
 from errors import *
 
@@ -30,7 +30,7 @@ class User(Base):
     # challenges: Mapped[List["Solve"]] = mapped_column(ForeignKey("challenge.id"), primary_key=True)
     
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.score!r})"
+        return f"User(id={self.id!r}, name={self.name!r}, score={self.score!r})"
 
 class Challenge(Base):
     __tablename__ = "challenges"
@@ -46,6 +46,7 @@ class Challenge(Base):
 
 Users = List[User]
 Challenges = List[Challenge]
+Solves = List[Solve]
 
 class DBManager():
     def __init__(self, db_name) -> None:
@@ -75,7 +76,6 @@ class DBManager():
             raise ChallengeNotFound(name, name=name)
         else:
             raise FoundMultipleChallenges(name, name=name)
-    
         
     def getAllUsers(self)-> Users:
         with Session(self.engine) as session:
@@ -93,6 +93,92 @@ class DBManager():
     
     def getChallengeByIdBatch(self, ids):
         return self.execute(select(Challenge).where(Challenge.id.in_(ids)))
+    
+    def new_solves(self, idx, api_solves):
+        data_new_solves = []  # list of tuples of form: (chall_title, next_user, points_to_next, is_first_blood)
+        with Session(self.engine) as session:
+            user = session.execute(select(User).where(User.id == idx)).one_or_none()[0]
+            all_users = sorted(self.getAllUsers(), key=lambda u: u.score)
+            print(all_users)
+            db_solves_id = session.scalars(select(Solve.challenge_id).where(Solve.user_id == idx)).all()
+            for api_solve in reversed(api_solves):  # sort from oldest to newest
+                if int(api_solve["id_challenge"]) not in db_solves_id:
+                    print(f"new challenge solved by user {idx}: {api_solve['titre']}")
+                    chall_obj = self.getChallengeById(api_solve["id_challenge"])
+                    chall_obj = session.merge(chall_obj)
+                    print(f"Adding solved challenge {chall_obj.title}")
+                    first_blood = (len(chall_obj.users) == 0)
+                    # print(chall_obj.users)
+                    # print(list(chall_obj.users))
+                    solve = Solve(user_id=idx, date=api_solve["date"])
+                    session.add(solve)
+                    solve.challenge = chall_obj
+
+                    user.challenges.append(solve)
+                    user.score += chall_obj.score
+                    next_user = [u for u in all_users if u.score > user.score]
+                    if not next_user:
+                        #  He his first in the scoreboard
+                        data_new_solves.append((chall_obj.title, None, None, first_blood))
+                    else:
+                        next_user = next_user[0]
+                        points_to_next = next_user.score - user.score
+                        data_new_solves.append((chall_obj.title, next_user.name, points_to_next, first_blood))
+                        print(f"{data_new_solves = }")
+                        # print(f"{next_user}")
+                    session.add(solve)
+            session.commit()
+        # print(data_new_solves)
+        return data_new_solves
+
+    async def update_user(self, idx: int) -> None:
+        """FONCTION DE LA VERSION 2 DU BOT, PRISE POUR REFERENCE POUR LES NOUVELLES VALIDATIONS"""
+        new_vals = []
+        #If the user already exists in our database
+
+        with Session(self.engine) as session:  # type: ignore
+            challs_id = [i[0] for i in session.query(Challenge.idx).all()]
+            old_auteur = await self.getUserById(idx)
+            old_id = [i.idx for i in session.merge(old_auteur).solves]
+            make_transient(old_auteur)
+
+            full_auteur = await self.retreive_user(idx)
+            full_auteur = session.merge(full_auteur)
+
+            for validation in full_auteur.validation_aut:
+                if validation.validation_challenge.idx not in challs_id:
+                    try:
+                        new_c = await self.add_challenge_to_db(validation.validation_challenge.idx, 0)
+                    except PremiumChallenge:
+                        print(f"Could not retreive premium challenge {idx}")
+                        continue
+                    if new_c:
+                        chall = session.merge(validation.validation_challenge)
+                        session.delete(chall)
+                        session.add(new_c)
+
+                if validation.validation_challenge.idx not in old_id:
+                    new_vals.append(validation)
+
+            # for val in new_vals:
+            #     res = session.query(Auteur.username, Auteur.score).filter(Auteur.score > val.validation_auteur.score).order_by(Auteur.score.asc()).limit(1).one_or_none()
+            #     if res:
+            #         user_above, user_score = res
+            #     else:
+            #         #First person in scoreboard
+            #         user_above, user_score = ("", 0)
+
+            #     above = (user_above, user_score)
+
+            #     if val.challenge_id:
+            #         #Premium challenge are None, we can't notify them :(
+            #         if len(val.validation_challenge.solvers) <= 3:
+            #             is_blood = True
+            #         else:
+            #             is_blood = False
+
+            #         self.notification_manager.add_solve_to_queue(val, above, is_blood)        
+
     
     def who_solved(self, name):
         with Session(self.engine) as session:

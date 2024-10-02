@@ -1,4 +1,4 @@
 UPDATE_CHALLS_DELAY = 3600
 UPDATE_SOLVES_DELAY = 300
 
-DB_NAME = "test.db"
+DB_NAME = "test_empty.db"

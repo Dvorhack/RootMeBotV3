@@ -20,7 +20,7 @@ class RootMeAPI(aiohttp.ClientSession):
         return chall
 
     async def fetchUser(self, idx):
-        user =  await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
+        user = await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
         if isinstance(user, list):
             user = user[0]
         return user
@@ -33,6 +33,11 @@ class RootMeAPI(aiohttp.ClientSession):
             return []
         else:
             return users
+    
+    async def updateUser(self, user):
+        user_data = await self.fetchUser(user.id)
+        # print(user_data["validations"])
+        return self.db.new_solves(user.id, user_data["validations"])
 
     async def loadChallenge(self, idx):
         x = self.db.getChallengeById(idx)
@@ -43,7 +48,7 @@ class RootMeAPI(aiohttp.ClientSession):
         chall_data = await self.fetchChallenge(idx)
         try:
             self.db.newChallenge(chall_data)
-            return chall_data
+            return chall_data["titre"]
         except:
             print(f"{chall_data = }")
 
@@ -90,7 +95,9 @@ class RootMeAPI(aiohttp.ClientSession):
         }
         print(url)
         async with self.get(url, cookies=cookies, headers=headers, params=params) as response:
-            return json.loads(await response.text())
+            text = await response.text()
+            # print(text)
+            return json.loads(text)
 
 async def main():
     async with RootMeAPI('365797_298ddfe31e07546808d7714063b2c88e7f92237c5d9118279c65f345d0261162') as api:
