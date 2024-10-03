@@ -82,6 +82,7 @@ class CustomBot(commands.Bot):
         """Checks for new challs"""
 
         await self.wait_until_ready()
+        channel = self.get_channel(self.bot_channel_id)
 
         while not self.init_done:
             await asyncio.sleep(1)
@@ -93,7 +94,7 @@ class CustomBot(commands.Bot):
                 new_challs = await self.api.loadAllChallenges()
                 if len(new_challs):
                     print(new_challs)
-                    ...
+                    utils.new_solves(channel, new_challs)
                     # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
@@ -106,6 +107,7 @@ class CustomBot(commands.Bot):
         """Checks for new challs"""
 
         await self.wait_until_ready()
+        channel = self.get_channel(self.bot_channel_id)
 
         while not self.init_done:
             await asyncio.sleep(1)
@@ -117,7 +119,7 @@ class CustomBot(commands.Bot):
                     solves_data = await self.api.updateUser(user)
                     if solves_data:
                         print(solves_data)
-                        ...
+                        utils.new_solves(channel, solves_data)
                         # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
