@@ -45,6 +45,14 @@ async def init_not_done_msg(ctx: commands.Context) -> None:
     message = f'init not done, please wait'
     await ctx.send(message)
 
+async def new_chall(chanel: TextChannel, chall_list) -> None:
+    message = f'New Chall : {chall_list}'
+    await chanel.send(message)
+
+async def new_solves(chanel: TextChannel, solve_list) -> None:
+    message = f'New solve : {solve_list}'
+    await chanel.send(message)
+
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
         0: "🥇",
