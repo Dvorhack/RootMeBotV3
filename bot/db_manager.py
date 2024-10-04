@@ -78,7 +78,7 @@ class DBManager():
         else:
             raise FoundMultipleChallenges(name, name=name)
         
-    def getAllUsers(self)-> Users:
+    def getAllUsers(self) -> Users:
         with Session(self.engine) as session:
             x = session.scalars(select(User)).all()
         return x
@@ -101,9 +101,10 @@ class DBManager():
         return self.execute(select(Challenge).where(Challenge.id.in_(ids)))
     
     def new_solves(self, idx, api_solves):
-        data_new_solves = []  # list of tuples of form: (chall_title, next_user, points_to_next, is_first_blood)
+        data_new_solves = []  # list of tuples of form: (user, chall, next_user, points_to_next, is_first_blood)
         with Session(self.engine) as session:
-            user = session.execute(select(User).where(User.id == idx)).one_or_none()[0]
+            session.expire_on_commit = False
+            user = session.scalar(select(User).where(User.id == idx))
             all_users = sorted(self.getAllUsers(), key=lambda u: u.score)
             print(all_users)
             db_solves_id = session.scalars(select(Solve.challenge_id).where(Solve.user_id == idx)).all()
@@ -123,11 +124,11 @@ class DBManager():
                     next_user = [u for u in all_users if u.score > user.score]
                     if not next_user:
                         #  He is the first in the scoreboard
-                        data_new_solves.append((chall_obj.title, None, None, first_blood))
+                        data_new_solves.append((user, chall_obj, None, None, first_blood))
                     else:
                         next_user = next_user[0]
                         points_to_next = next_user.score - user.score
-                        data_new_solves.append((chall_obj.title, next_user.name, points_to_next, first_blood))
+                        data_new_solves.append((user, chall_obj, next_user.name, points_to_next, first_blood))
                         # print(f"{data_new_solves = }")
                     session.add(solve)
             session.commit()

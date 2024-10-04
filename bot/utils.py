@@ -45,13 +45,13 @@ async def init_not_done_msg(ctx: commands.Context) -> None:
     message = f'init not done, please wait'
     await ctx.send(message)
 
-async def new_chall(chanel: TextChannel, chall_list) -> None:
+async def new_chall(channel: TextChannel, chall_list) -> None:
     message = f'New Chall : {chall_list}'
-    await chanel.send(message)
+    await channel.send(message)
 
-async def new_solves(chanel: TextChannel, solve_list) -> None:
+async def new_solves(channel: TextChannel, solve_list) -> None:
     message = f'New solve : {solve_list}'
-    await chanel.send(message)
+    await channel.send(message)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
@@ -159,7 +159,6 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
         return res
 
     def concatenate_images(images, columns=2):
-
         img_width, img_height = images[0].size
         total_images = len(images)
         rows = (total_images + columns - 1) // columns

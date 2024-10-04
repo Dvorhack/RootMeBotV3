@@ -72,7 +72,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        await self.api.loadAllChallenges()
+        # await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -94,7 +94,7 @@ class CustomBot(commands.Bot):
                 new_challs = await self.api.loadAllChallenges()
                 if len(new_challs):
                     print(new_challs)
-                    utils.new_solves(channel, new_challs)
+                    await utils.new_chall(channel, new_challs)
                     # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
@@ -119,7 +119,7 @@ class CustomBot(commands.Bot):
                     solves_data = await self.api.updateUser(user)
                     if solves_data:
                         print(solves_data)
-                        utils.new_solves(channel, solves_data)
+                        await utils.new_solves(channel, solves_data)
                         # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
@@ -156,10 +156,11 @@ class CustomBot(commands.Bot):
         @self.hybrid_command(name="update_challs", description="on garde ou pas ?")
         async def update_challs(ctx: commands.context):
             await ctx.defer()
+            channel = self.get_channel(self.bot_channel_id)
             # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
             new_challs = await self.api.loadAllChallenges()
             if len(new_challs):
-                ...
+                await utils.new_chall(channel, new_challs)
                 # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             await ctx.reply("Challenges updated successfully")
         
