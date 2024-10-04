@@ -33,25 +33,35 @@ Challenges = list[Challenge]
 
 async def init_start_msg(channel: TextChannel) -> None:
     """First time running message"""
-    message = f'I am fetching the challenges'
-    await channel.send(message)
+    title = f'Good to see you :grin:'
+    description = f'I am fetching the challenges, please wait.'
+    embed = discord.Embed(color=Color.lighter_grey(), title=title, description=description)
+    await channel.send(embed=embed)
 
 async def init_end_msg(channel: TextChannel) -> None:
     """Initialization complete"""
-    message = f'init done, you can start use me'
-    await channel.send(message)
+    title = f'Initialization done :wink:'
+    description = f'You can start using me. Enjoy !'
+    embed = discord.Embed(color=Color.brand_green(), title=title, description=description)
+    await channel.send(embed=embed)
 
 async def init_not_done_msg(ctx: commands.Context) -> None:
-    message = f'init not done, please wait'
-    await ctx.send(message)
+    title = f'Initialization not done :confused:'
+    description = f'Please wait a bit...'
+    embed = discord.Embed(color=Color.orange(), title=title, description=description)
+    await ctx.reply(embed=embed)
 
 async def new_chall(channel: TextChannel, chall_list) -> None:
-    message = f'New Chall : {chall_list}'
-    await channel.send(message)
+    title = f'New chall'
+    description = f'New Chall : {chall_list}'
+    embed = discord.Embed(color=Color.dark_green(), title=title, description=description)
+    await channel.send(embed=embed)
 
 async def new_solves(channel: TextChannel, solve_list) -> None:
-    message = f'New solve : {solve_list}'
-    await channel.send(message)
+    title = f'New solve'
+    description = f'New Solve : {solve_list}'
+    embed = discord.Embed(color=Color.gold(), title=title, description=description)
+    await channel.send(embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
@@ -98,8 +108,10 @@ async def today_msg(ctx: commands.Context, users) -> None:
     await ctx.send(file=file, embed=embed)
 
 async def too_many_users_msg(ctx: commands.Context, name) -> None:
-    message = f"Too many users found for name {name}"
-    await ctx.send(message)
+    title = f'Too many users found for {name} :woozy_face:'
+    description = f'Try using your full username, or use your UID instead'
+    embed = discord.Embed(color=Color.red(), title=title, description=description)
+    await ctx.reply(embed=embed)
 
 async def added_ok(ctx: commands.Context, name) -> None:
     message_title = 'Success'
@@ -109,10 +121,12 @@ async def added_ok(ctx: commands.Context, name) -> None:
     await ctx.reply(embed=embed)
 
 async def who_solved_msg(ctx: commands.Context, chall_name, solvers: Users) -> None:
-    message = f"Users who solved {chall_name}\n"
+    title = f'Solvers of {chall_name} :sunglasses:'
+    embed = discord.Embed(color=Color.purple(), title=title, description="")
     for x in solvers:
-        message += f"--- {x.name}\n"
-    await ctx.send(message)
+        embed.add_field(name=f"{x.name}",value=f"",inline=False)
+
+    await ctx.reply(embed=embed)
 
 async def profile(ctx: commands.Context, user:User, stats) -> None:
     
@@ -188,7 +202,7 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
     file = discord.File('resources/score.png', filename='score.png')
 
     message_title = f"Profile of {user.name}"
-    embed = discord.Embed(color=Color.yellow(), title=message_title, description=f"*ID : {user.id}\nScore : {user.score}*")
+    embed = discord.Embed(color=Color.blue(), title=message_title, description=f"*ID : {user.id}\nScore : {user.score}*")
 
     if requests.head(f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg").status_code == 200 :
         pp = f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg"
@@ -220,6 +234,7 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
             color = '#37a7e6'
             ha = 'left'
 
+        ax.barh(y_pos, [sens*100 for _ in profile], bar_width, color="#2b2d31", align='center')
         ax.barh(y_pos, profile, bar_width, color=color, align='center')
 
         for i, v in enumerate(profile):

@@ -38,7 +38,10 @@ class MultipleUserFoundView(discord.ui.View):
     async def add_user(self, idx: str):
         auteur = next(filter(lambda x: x['id_auteur'] == idx, self.users))
         await self.api.loadUser(idx=int(auteur['id_auteur']))
-        await self.channel.send(f"{auteur} added")
+        message_title = 'Success'
+        message = f'{auteur["nom"]} was successfully added :+1:'
+        embed = discord.Embed(color=discord.Color.green(), title=message_title, description=message)
+        await self.channel.send(embed=embed)
 
 
 class CustomBot(commands.Bot):
