@@ -52,16 +52,40 @@ async def init_not_done_msg(ctx: commands.Context) -> None:
     await ctx.reply(embed=embed)
 
 async def new_chall(channel: TextChannel, chall_list) -> None:
-    title = f'New chall'
-    description = f'New Chall : {chall_list}'
-    embed = discord.Embed(color=Color.dark_green(), title=title, description=description)
-    await channel.send(embed=embed)
+    for chall in chall_list:
+        title = f'New challenge available !'
+        embed = discord.Embed(color=Color.dark_green(), title=title, description="")
+        embed.add_field(name=f'{chall.title}', value=f'soustitre')
+        await channel.send(embed=embed)
 
 async def new_solves(channel: TextChannel, solve_list) -> None:
-    title = f'New solve'
-    description = f'New Solve : {solve_list}'
-    embed = discord.Embed(color=Color.gold(), title=title, description=description)
-    await channel.send(embed=embed)
+    def create_thumbnail(points):
+        border_thickness = -1
+        img = Image.new('RGB', (150, 60), color='#2b2d31')
+        draw = ImageDraw.Draw(img)
+        
+        draw.rectangle([(border_thickness, border_thickness), (50-border_thickness, 50-border_thickness)], width=-1)
+        
+        font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=60)
+        
+        draw.text((0, 0), f'+ {points}', fill='white', font=font)
+        return img
+    
+    for solve in solve_list:
+        if solve[-1] : emoji=":drop_of_blood:"
+        else : emoji=":partying_face:"
+
+        title = f'**{solve[0].name}** solved a new challenge !  {emoji}'
+        description = f'*New score : {solve[0].score}*'
+        embed = discord.Embed(color=Color.gold(), title=title, description=description)
+
+        create_thumbnail(solve[1].score).save('resources/score.png')
+        file = discord.File('resources/score.png', filename='score.png')  
+        embed.set_thumbnail(url="attachment://score.png")
+
+        embed.add_field(name=f'{solve[1].title}', value=f'{solve[1].subtitle}')
+        embed.set_footer(text=f'{solve[-2]} points to overtake {solve[-3]}')
+        await channel.send(file=file, embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {

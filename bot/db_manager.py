@@ -32,6 +32,7 @@ class User(Base):
     
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.name!r}, score={self.score!r})"
+        
 
 class Challenge(Base):
     __tablename__ = "challenges"
@@ -43,8 +44,8 @@ class Challenge(Base):
     difficuly: Mapped[str]
     users: Mapped[List["Solve"]] = relationship(back_populates="challenge")
     def __repr__(self) -> str:
-        return f"Challenge(id={self.id!r}, title={self.title!r})"
-
+        return f"Challenge(id={self.id!r}, title={self.title!r}, subtitle={self.subtitle!r}, score={self.score!r}, category={self.category!r}, difficuly={self.difficuly!r})"
+    
 Users = List[User]
 Challenges = List[Challenge]
 Solves = List[Solve]
@@ -106,7 +107,7 @@ class DBManager():
             session.expire_on_commit = False
             user = session.scalar(select(User).where(User.id == idx))
             all_users = sorted(self.getAllUsers(), key=lambda u: u.score)
-            print(all_users)
+            #print(all_users)
             db_solves_id = session.scalars(select(Solve.challenge_id).where(Solve.user_id == idx)).all()
             for api_solve in reversed(api_solves):  # sort from oldest to newest
                 if int(api_solve["id_challenge"]) not in db_solves_id:
