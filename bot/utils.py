@@ -120,6 +120,13 @@ async def added_ok(ctx: commands.Context, name) -> None:
     embed = discord.Embed(color=Color.green(), title=message_title, description=message)
     await ctx.reply(embed=embed)
 
+async def removed_ok(ctx: commands.Context, name) -> None:
+    message_title = 'Success'
+    message = f'{escape_markdown(name)} was successfully removed :cry:\nWe will miss him/her :('
+
+    embed = discord.Embed(color=Color.green(), title=message_title, description=message)
+    await ctx.reply(embed=embed)
+
 async def who_solved_msg(ctx: commands.Context, chall_name, solvers: Users) -> None:
     title = f'Solvers of {chall_name} :sunglasses:'
     embed = discord.Embed(color=Color.purple(), title=title, description="")
