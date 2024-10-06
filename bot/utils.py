@@ -59,6 +59,28 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
         await channel.send(embed=embed)
 
 async def new_solves(channel: TextChannel, solve_list) -> None:
+    def create_thumbnail(score):
+        points = str(score)
+        image = Image.new('RGB', (800, 512), color='#383a40')
+        draw = ImageDraw.Draw(image)
+        main_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=300)
+        second_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=100)
+
+        bbox = draw.textbbox((0, 0), "New score :", font=second_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = (150 - text_height) / 2
+        draw.text((x, y), "New score :", font=second_font, fill='white')
+
+        bbox = draw.textbbox((0, 0), points, font=main_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = 256 - (text_height) / 2
+        draw.text((x, y), points, font=main_font, fill='white')
+
+        return image
 
     for solve in solve_list:
         if solve[-1] : emoji=":drop_of_blood:"
@@ -66,15 +88,20 @@ async def new_solves(channel: TextChannel, solve_list) -> None:
 
         title = f'**{solve[0].name}** solved a new challenge !  {emoji}'
         description = f'*New score : {solve[0].score}*'
-        embed = discord.Embed(color=Color.gold(), title=title, description=description)
+        embed = discord.Embed(color=Color.gold(), title=title, description="")
         
         chall_card(solve[1]).save('resources/chall_card.png')
         file = discord.File('resources/chall_card.png', filename='chall_card.png')
         embed.set_image(url='attachment://chall_card.png')
 
+        thumbnail = create_thumbnail(solve[0].score).save('resources/score.png')
+        file2 = discord.File('resources/score.png', filename='score.png')
+        embed.set_thumbnail(url='attachment://score.png')
+
+
         embed.add_field(name=f'{solve[1].title}', value="") #value=f'{solve[1].subtitle}'
         embed.set_footer(text=f'{solve[-2]} points to overtake {solve[-3]}')
-        await channel.send(file=file, embed=embed)
+        await channel.send(files=[file, file2], embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
