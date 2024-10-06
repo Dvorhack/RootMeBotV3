@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from datetime import date
 
@@ -100,6 +100,15 @@ class DBManager():
     
     def getChallengeByIdBatch(self, ids):
         return self.execute(select(Challenge).where(Challenge.id.in_(ids)))
+
+    def deleteUserByName(self, name):
+        with Session(self.engine) as session:
+            user_to_delete = session.scalar(select(User).where(User.name == name))
+            for solve in user_to_delete.challenges:
+                session.delete(solve)
+            
+            session.delete(user_to_delete)
+            session.commit()
     
     def new_solves(self, idx, api_solves):
         data_new_solves = []  # list of tuples of form: (user, chall, next_user, points_to_next, is_first_blood)
@@ -125,12 +134,16 @@ class DBManager():
                     next_user = [u for u in all_users if u.score > user.score]
                     if not next_user:
                         #  He is the first in the scoreboard
-                        data_new_solves.append((user, chall_obj, None, None, first_blood))
+                        data_new_solve = (user, chall_obj, None, None, first_blood)
+                        # data_new_solves.append((user, chall_obj, None, None, first_blood))
                     else:
                         next_user = next_user[0]
                         points_to_next = next_user.score - user.score
-                        data_new_solves.append((user, chall_obj, next_user.name, points_to_next, first_blood))
+                        data_new_solve = (user, chall_obj, next_user.name, points_to_next, first_blood)
+                        # data_new_solves.append((user, chall_obj, next_user.name, points_to_next, first_blood))
                         # print(f"{data_new_solves = }")
+                    data_new_solves.append(data_new_solve)
+                    yield data_new_solve
                     session.add(solve)
             session.commit()
         return data_new_solves

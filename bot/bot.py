@@ -119,10 +119,12 @@ class CustomBot(commands.Bot):
             await asyncio.sleep(UPDATE_SOLVES_DELAY)
             try:
                 for user in self.db_pool.getAllUsers():
-                    solves_data = await self.api.updateUser(user)
-                    if solves_data:
-                        print(solves_data)
-                        await utils.new_solves(channel, solves_data)
+                    async for solve in self.api.updateUser(user):
+                        await utils.new_solves(channel, solve)
+                    # solves_data = await self.api.updateUser(user)
+                    # if solves_data:
+                    #     print(solves_data)
+                    #     await utils.new_solves(channel, solves_data)
                         # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
@@ -170,11 +172,13 @@ class CustomBot(commands.Bot):
         
         @self.hybrid_command(name="update_solves", description="on garde ou pas ?")
         async def update_solves(ctx: commands.context):
+            await ctx.defer()
+            channel = self.get_channel(self.bot_channel_id)
             for user in self.db_pool.getAllUsers():
                 solves_data = await self.api.updateUser(user)
                 if solves_data:
                     await utils.new_solves(ctx, solves_data)
-
+        
         @self.hybrid_command(name="scoreboard", description="lol")
         async def scoreboard(ctx: commands.Context):
             users = self.db_pool.getAllUsers()
@@ -212,12 +216,21 @@ class CustomBot(commands.Bot):
                 else:
                     await ctx.reply(f"User {input} not found")
 
+        @self.hybrid_command(name="remove_user", description="lol")
+        async def remove_user(ctx: commands.Context, input):
+            if input.isdigit():
+                user = self.db_pool.getUserById(input)
+                name = user.name
+            else:
+                name = input
+            self.db_pool.deleteUserByName(name)
+            await utils.removed_ok(ctx, name)
 
         @self.hybrid_command(name="profile", description="lol")
         async def profile(ctx: commands.Context, name):
             if name.isdigit():
                 user = self.db_pool.getUserById(name)[0]
-            else : 
+            else: 
                 user = self.db_pool.getUserByName(name)[0]
             user_stats = self.db_pool.getStats(user.id)
                     
