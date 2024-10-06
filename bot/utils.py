@@ -52,16 +52,61 @@ async def init_not_done_msg(ctx: commands.Context) -> None:
     await ctx.reply(embed=embed)
 
 async def new_chall(channel: TextChannel, chall_list) -> None:
-    title = f'New chall'
-    description = f'New Chall : {chall_list}'
-    embed = discord.Embed(color=Color.dark_green(), title=title, description=description)
-    await channel.send(embed=embed)
+    for chall in chall_list:
+        title = f'New challenge available !'
+        embed = discord.Embed(color=Color.dark_green(), title=title, description="")
+        embed.add_field(name=f'{chall.title}', value=f'{chall.subtitle}')
+        
+        chall_card(chall).save('resources/chall_card.png')
+        file = discord.File('resources/chall_card.png', filename='chall_card.png')
+        embed.set_image(url='attachment://chall_card.png')
+
+        await channel.send(file=file, embed=embed)
 
 async def new_solves(channel: TextChannel, solve_list) -> None:
-    title = f'New solve'
-    description = f'New Solve : {solve_list}'
-    embed = discord.Embed(color=Color.gold(), title=title, description=description)
-    await channel.send(embed=embed)
+    def create_thumbnail(score):
+        points = str(score)
+        image = Image.new('RGB', (800, 512), color='#383a40')
+        draw = ImageDraw.Draw(image)
+        main_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=300)
+        second_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=100)
+
+        bbox = draw.textbbox((0, 0), "New score :", font=second_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = (150 - text_height) / 2
+        draw.text((x, y), "New score :", font=second_font, fill='white')
+
+        bbox = draw.textbbox((0, 0), points, font=main_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = 256 - (text_height) / 2
+        draw.text((x, y), points, font=main_font, fill='white')
+
+        return image
+
+    for solve in solve_list:
+        if solve[-1] : emoji=":drop_of_blood:"
+        else : emoji=":partying_face:"
+
+        title = f'**{solve[0].name}** solved a new challenge !  {emoji}'
+        description = f'*New score : {solve[0].score}*'
+        embed = discord.Embed(color=Color.gold(), title=title, description="")
+        
+        chall_card(solve[1]).save('resources/chall_card.png')
+        file = discord.File('resources/chall_card.png', filename='chall_card.png')
+        embed.set_image(url='attachment://chall_card.png')
+
+        create_thumbnail(solve[0].score).save('resources/score.png')
+        file2 = discord.File('resources/score.png', filename='score.png')
+        embed.set_thumbnail(url='attachment://score.png')
+
+
+        embed.add_field(name=f'{solve[1].title}', value="") #value=f'{solve[1].subtitle}'
+        embed.set_footer(text=f'{solve[-2]} points to overtake {solve[-3]}')
+        await channel.send(files=[file, file2], embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
@@ -300,3 +345,41 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
     file = discord.File('resources/test.png', filename='test.png')
     embed.set_image(url='attachment://test.png')
     await ctx.send(embed=embed, file=file)  
+
+def chall_card(chall) -> Image :
+    def img_concat_h(im1, im2, im3):
+        res = Image.new('RGB', (im1.width + im2.width + im3.width + 400, max(im1.height, im2.height, im3.height)), color='#2b2d31')
+        res.paste(im1, (0, 0))
+        res.paste(im2, (im1.width +200, 0))
+        res.paste(im3, (im1.width +400 + im2.width, 0))
+        return res
+
+    def points_widget(points):
+        points = str(points)
+        image = Image.new('RGB', (800, 712), color='#2b2d31')
+        draw = ImageDraw.Draw(image)
+        main_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=300)
+        second_font = ImageFont.truetype("resources/LiberationSans-Bold.ttf", size=100)
+
+        bbox = draw.textbbox((0, 0), points, font=main_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = (512 - text_height) / 2
+        draw.text((x, y), points, font=main_font, fill='white')
+
+        bbox = draw.textbbox((0, 0), "Points", font=second_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        x = (800 - text_width) / 2
+        y = 256 + (150 - text_height) / 3
+        draw.text((x, 2*y), "Points", font=second_font, fill='white')
+
+        return image
+
+    score_img = points_widget(chall.score)
+    cat_img = Image.open(f'./resources/categories/{chall.category}.png')
+    dif_img = Image.open(f'./resources/difficulties/{chall.difficuly}.png')
+
+    full = img_concat_h(cat_img, dif_img, score_img)
+    return full

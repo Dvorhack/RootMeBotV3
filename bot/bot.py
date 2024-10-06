@@ -96,8 +96,8 @@ class CustomBot(commands.Bot):
                 # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
                 new_challs = await self.api.loadAllChallenges()
                 if len(new_challs):
-                    print(new_challs)
-                    await utils.new_chall(channel, new_challs)
+                    full_chall_list = [self.db_pool.getChallengeById(x) for x in new_challs]
+                    await utils.new_chall(channel, full_chall_list)
                     # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
@@ -165,6 +165,7 @@ class CustomBot(commands.Bot):
             # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
             new_challs = await self.api.loadAllChallenges()
             if len(new_challs):
+                print(new_challs)
                 await utils.new_chall(channel, new_challs)
                 # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             await ctx.reply("Challenges updated successfully")
@@ -174,14 +175,10 @@ class CustomBot(commands.Bot):
             await ctx.defer()
             channel = self.get_channel(self.bot_channel_id)
             for user in self.db_pool.getAllUsers():
-                # solves_data = await self.api.updateUser(user)
-                # if solves_data:
-                #     for solve in solves_data:
-                #         await ctx.reply(solve)
-                async for solve in self.api.updateUser(user):
-                    await utils.new_solves(channel, solve)
-            await ctx.reply("Solves updated successfully")
-
+                solves_data = await self.api.updateUser(user)
+                if solves_data:
+                    await utils.new_solves(ctx, solves_data)
+        
         @self.hybrid_command(name="scoreboard", description="lol")
         async def scoreboard(ctx: commands.Context):
             users = self.db_pool.getAllUsers()
