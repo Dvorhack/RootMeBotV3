@@ -38,7 +38,7 @@ class RootMeAPI(aiohttp.ClientSession):
         user_data = await self.fetchUser(user.id)
         for solve in self.db.new_solves(user.id, user_data["validations"]):
             yield solve
-            asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)
 
     async def loadChallenge(self, idx):
         x = self.db.getChallengeById(idx)

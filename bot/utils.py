@@ -63,7 +63,7 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
 
         await channel.send(file=file, embed=embed)
 
-async def new_solves(channel: TextChannel, solve_list) -> None:
+async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool]) -> None:
     def create_thumbnail(score):
         points = str(score)
         image = Image.new('RGB', (800, 512), color='#383a40')
@@ -86,27 +86,31 @@ async def new_solves(channel: TextChannel, solve_list) -> None:
         draw.text((x, y), points, font=main_font, fill='white')
 
         return image
+    
+    user, chall, next_user, points_to_reach, firstblood = solve
+    # for solve in solve_list:
+    if firstblood : emoji=":drop_of_blood:"
+    else : emoji=":partying_face:"
 
-    for solve in solve_list:
-        if solve[-1] : emoji=":drop_of_blood:"
-        else : emoji=":partying_face:"
+    title = f'**{user.name}** solved a new challenge !  {emoji}'
+    description = f'*New score : {user.score}*'
+    embed = discord.Embed(color=Color.gold(), title=title, description="")
+    
+    chall_card(chall).save('resources/chall_card.png')
+    file = discord.File('resources/chall_card.png', filename='chall_card.png')
+    embed.set_image(url='attachment://chall_card.png')
 
-        title = f'**{solve[0].name}** solved a new challenge !  {emoji}'
-        description = f'*New score : {solve[0].score}*'
-        embed = discord.Embed(color=Color.gold(), title=title, description="")
-        
-        chall_card(solve[1]).save('resources/chall_card.png')
-        file = discord.File('resources/chall_card.png', filename='chall_card.png')
-        embed.set_image(url='attachment://chall_card.png')
-
-        create_thumbnail(solve[0].score).save('resources/score.png')
-        file2 = discord.File('resources/score.png', filename='score.png')
-        embed.set_thumbnail(url='attachment://score.png')
+    create_thumbnail(user.score).save('resources/score.png')
+    file2 = discord.File('resources/score.png', filename='score.png')
+    embed.set_thumbnail(url='attachment://score.png')
 
 
-        embed.add_field(name=f'{solve[1].title}', value="") #value=f'{solve[1].subtitle}'
-        embed.set_footer(text=f'{solve[-2]} points to overtake {solve[-3]}')
-        await channel.send(files=[file, file2], embed=embed)
+    embed.add_field(name=f'{chall.title}', value="") #value=f'{solve[1].subtitle}'
+    if next_user:  # There is someone to overtake
+        embed.set_footer(text=f'{points_to_reach} points to overtake {next_user}')
+    else:
+        embed.set_footer(text=f"{user.name} is still on top of the world!")
+    await channel.send(files=[file, file2], embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
