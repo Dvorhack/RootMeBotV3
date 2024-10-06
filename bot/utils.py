@@ -55,8 +55,13 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
     for chall in chall_list:
         title = f'New challenge available !'
         embed = discord.Embed(color=Color.dark_green(), title=title, description="")
-        embed.add_field(name=f'{chall.title}', value=f'soustitre')
-        await channel.send(embed=embed)
+        embed.add_field(name=f'{chall.title}', value=f'{chall.subtitle}')
+        
+        chall_card(chall).save('resources/chall_card.png')
+        file = discord.File('resources/chall_card.png', filename='chall_card.png')
+        embed.set_image(url='attachment://chall_card.png')
+
+        await channel.send(file=file, embed=embed)
 
 async def new_solves(channel: TextChannel, solve_list) -> None:
     def create_thumbnail(score):
@@ -94,7 +99,7 @@ async def new_solves(channel: TextChannel, solve_list) -> None:
         file = discord.File('resources/chall_card.png', filename='chall_card.png')
         embed.set_image(url='attachment://chall_card.png')
 
-        thumbnail = create_thumbnail(solve[0].score).save('resources/score.png')
+        create_thumbnail(solve[0].score).save('resources/score.png')
         file2 = discord.File('resources/score.png', filename='score.png')
         embed.set_thumbnail(url='attachment://score.png')
 

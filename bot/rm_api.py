@@ -47,7 +47,7 @@ class RootMeAPI(aiohttp.ClientSession):
         chall_data = await self.fetchChallenge(idx)
         try:
             self.db.newChallenge(chall_data)
-            return chall_data["titre"]
+            return chall_data["id_trad"]
         except:
             print(f"{chall_data = }")
 

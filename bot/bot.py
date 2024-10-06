@@ -96,8 +96,8 @@ class CustomBot(commands.Bot):
                 # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
                 new_challs = await self.api.loadAllChallenges()
                 if len(new_challs):
-                    print(new_challs)
-                    await utils.new_chall(channel, new_challs)
+                    full_chall_list = [self.db_pool.getChallengeById(x) for x in new_challs]
+                    await utils.new_chall(channel, full_chall_list)
                     # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
                 # channel = self.get_channel(self.BOT_CHANNEL)
