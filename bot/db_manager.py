@@ -4,7 +4,7 @@ from typing import Optional
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
-from datetime import date
+from datetime import date, timedelta
 
 from errors import *
 
@@ -19,6 +19,9 @@ class Solve(Base):
     date: Mapped[str]
     user: Mapped["User"] = relationship(back_populates="challenges")
     challenge: Mapped["Challenge"] = relationship(back_populates="users")
+
+    def __repr__(self) -> str:
+        return f"Solve(user_id={self.user_id!r}, challenge_id={self.challenge_id!r}, date={self.date})"
 
 
 class User(Base):
@@ -58,6 +61,7 @@ class DBManager():
     def getUserById(self, idx) -> User:
         x = self.execute(select(User).where(User.id == idx))
         if len(x) == 1:
+            print(x)
             return x[0]
         elif len(x) == 0:
             return None
@@ -88,6 +92,12 @@ class DBManager():
         with Session(self.engine) as session:
             x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(func.date(Solve.date) == date.today()).group_by(User.name).all()
         return x
+    
+    def getLastSolves(self, n_days):
+        start = date.today() - timedelta(days=n_days)
+        print(start)
+        x = self.execute(select(Solve).where(func.date(Solve.date) >= start).group_by(Solve.user_id))
+        return x
         
     def getChallengeById(self, idx) -> Challenge:
         x = self.execute(select(Challenge).where(Challenge.id == idx))
@@ -109,7 +119,7 @@ class DBManager():
             
             session.delete(user_to_delete)
             session.commit()
-    
+
     def new_solves(self, idx, api_solves):
         data_new_solves = []  # list of tuples of form: (user, chall, next_user, points_to_next, is_first_blood)
         with Session(self.engine) as session:

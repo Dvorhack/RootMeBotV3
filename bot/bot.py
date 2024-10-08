@@ -195,7 +195,7 @@ class CustomBot(commands.Bot):
 
             if input.isdigit():
                 users = await self.api.fetchUser(input)
-                try :
+                try:
                     await self.api.loadUser(idx=input)
                     await utils.added_ok(ctx, users['nom'])
                 except :
@@ -220,41 +220,51 @@ class CustomBot(commands.Bot):
         async def remove_user(ctx: commands.Context, input):
             if input.isdigit():
                 user = self.db_pool.getUserById(input)
-                name = user.name
             else:
-                name = input
-            self.db_pool.deleteUserByName(name)
-            await utils.removed_ok(ctx, name)
+                user = self.db_pool.getUserByName(input)
+            if user:
+                user = user[0]
+                self.db_pool.deleteUserByName(user.name)
+                await utils.removed_ok(ctx, user.name)
+            else:
+                await ctx.reply(f"User {input} not found in database")
 
         @self.hybrid_command(name="profile", description="lol")
         async def profile(ctx: commands.Context, name):
+            await ctx.defer()
             if name.isdigit():
-                user = self.db_pool.getUserById(name)[0]
+                user = self.db_pool.getUserById(name)
             else: 
-                user = self.db_pool.getUserByName(name)[0]
-            user_stats = self.db_pool.getStats(user.id)
-                    
-            await utils.profile(ctx, user, user_stats)
+                user = self.db_pool.getUserByName(name)
+            if user:
+                user = user[0]
+                user_stats = self.db_pool.getStats(user.id)    
+                await utils.profile(ctx, user, user_stats)
+            else:
+                await ctx.reply(f"User {name} not found in database")
 
         @self.hybrid_command(name="compare", description="lol")
-        async def compare(ctx: commands.Context, user1, user2):
-
-            if user1.isdigit():
-                user1 = self.db_pool.getUserById(user1)[0]
+        async def compare(ctx: commands.Context, input1, input2):
+            if input1.isdigit():
+                user1 = self.db_pool.getUserById(input1)
             else : 
-                user1 = self.db_pool.getUserByName(user1)[0]
+                user1 = self.db_pool.getUserByName(input1)
 
-            if user2.isdigit():
-                user2 = self.db_pool.getUserById(user2)[0]
+            if input2.isdigit():
+                user2 = self.db_pool.getUserById(input2)
             else : 
-                user2 = self.db_pool.getUserByName(user2)[0]
-
-            user1_stats = self.db_pool.getStats(user1.id)
-            user2_stats = self.db_pool.getStats(user2.id)
-
-            await utils.compare_graph(ctx, user1, user1_stats, user2, user2_stats)
-
-
+                user2 = self.db_pool.getUserByName(input2)
+            
+            if user1 and user2:
+                user1, user2 = user1[0], user2[0]
+                user1_stats = self.db_pool.getStats(user1.id)
+                user2_stats = self.db_pool.getStats(user2.id)
+                await utils.compare_graph(ctx, user1, user1_stats, user2, user2_stats)
+            else:
+                if not user1:
+                    await ctx.reply(f"User {input1} not found in database")
+                if not user2:
+                    await ctx.reply(f"User {input2} not found in database")
 
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'
