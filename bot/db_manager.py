@@ -4,7 +4,7 @@ from typing import Optional
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from errors import *
 
@@ -16,7 +16,7 @@ class Solve(Base):
     __tablename__ = "solves"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     challenge_id: Mapped[int] = mapped_column(ForeignKey("challenges.id"), primary_key=True)
-    date: Mapped[str]
+    date: Mapped[Date] = mapped_column(Date())
     user: Mapped["User"] = relationship(back_populates="challenges")
     challenge: Mapped["Challenge"] = relationship(back_populates="users")
 
@@ -90,7 +90,8 @@ class DBManager():
     
     def getTodayScoreboard(self):
         with Session(self.engine) as session:
-            x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(func.date(Solve.date) == date.today()).group_by(User.name).all()
+            # x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(func.date(Solve.date) == date.today()).group_by(User.name).all()
+            x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(Solve.date == date.today()).group_by(User.name).all()
         return x
     
     def getLastSolves(self, n_days):
@@ -135,7 +136,7 @@ class DBManager():
                     chall_obj = session.merge(chall_obj)
                     print(f"Adding solved challenge {chall_obj.title}")
                     first_blood = (len(chall_obj.users) == 0)
-                    solve = Solve(user_id=idx, date=api_solve["date"])
+                    solve = Solve(user_id=idx, date=datetime.strptime(api_solve['date'], "%Y-%m-%d %H:%M:%S"))
                     session.add(solve)
                     solve.challenge = chall_obj
 
@@ -217,7 +218,7 @@ class DBManager():
                     raise Exception(f"Challenge {chall} solved by {user} doesn't exist in db")
                 print(f"Adding solved challenge {chall_obj.title}")
                 
-                solve = Solve(date=chall['date'])
+                solve = Solve(date=datetime.strptime(chall['date'], "%Y-%m-%d %H:%M:%S"))
                 solve.challenge = chall_obj
 
                 user.challenges.append(solve)
