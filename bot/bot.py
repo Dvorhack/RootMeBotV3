@@ -188,6 +188,11 @@ class CustomBot(commands.Bot):
         async def today(ctx: commands.Context):
             users = self.db_pool.getTodayScoreboard()
             await utils.today_msg(ctx, users)
+        
+        @self.hybrid_command(name="graph", description="lol")
+        async def graph(ctx: commands.Context, n_days: int):
+            last_solves = self.db_pool.getLastSolves(n_days)
+            print(last_solves)
 
         @self.hybrid_command(name="add_user", description="lol")
         async def add_user(ctx: commands.Context, input):

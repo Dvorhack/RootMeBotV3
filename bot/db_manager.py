@@ -2,9 +2,10 @@ from typing import List
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete, asc
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from datetime import date, timedelta, datetime
+from numpy import cumsum
 
 from errors import *
 
@@ -95,10 +96,18 @@ class DBManager():
         return x
     
     def getLastSolves(self, n_days):
+        users_cum_score = []  # list of tuples, of the form (username, [cumulated earned points])
         start = date.today() - timedelta(days=n_days)
         print(start)
-        x = self.execute(select(Solve).where(func.date(Solve.date) >= start).group_by(Solve.user_id))
-        return x
+        users = self.getAllUsers()
+        with Session(self.engine) as session:
+            for u in users:
+                solves_by_day = [0] * (n_days + 1)
+                user_last_solves = session.query(Solve.date, Challenge.score).join(User, Solve.user_id == User.id).filter(Solve.challenge_id == Challenge.id).filter(User.id == u.id).filter(Solve.date >= start).order_by(asc(Solve.date)).all()
+                for day, score in user_last_solves:
+                    solves_by_day[(day-start).days] += score
+                users_cum_score.append((u.name, cumsum(solves_by_day).tolist()))
+        return sorted(users_cum_score, key=lambda el: el[1][-1], reverse=True)[:10]
         
     def getChallengeById(self, idx) -> Challenge:
         x = self.execute(select(Challenge).where(Challenge.id == idx))
