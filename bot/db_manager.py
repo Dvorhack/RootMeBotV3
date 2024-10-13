@@ -103,15 +103,16 @@ class DBManager():
     def getLastSolves(self, n_days):
         users_cum_score = []  # list of tuples, of the form (username, [cumulated earned points])
         start = date.today() - timedelta(days=n_days)
-        print(start)
         users = self.getAllUsers()
         with Session(self.engine) as session:
             for u in users:
-                solves_by_day = [0] * (n_days + 1)
+                solves_by_day = [0] * (n_days + 2)
                 user_last_solves = session.query(Solve.date, Challenge.score).join(User, Solve.user_id == User.id).filter(Solve.challenge_id == Challenge.id).filter(User.id == u.id).filter(Solve.date >= start).order_by(asc(Solve.date)).all()
                 for day, score in user_last_solves:
-                    solves_by_day[(day-start).days] += score
-                users_cum_score.append((u.name, cumsum(solves_by_day).tolist()))
+                    solves_by_day[(day-start).days+1] += score
+                cumsolves = cumsum(solves_by_day).tolist()
+                if cumsolves[-1] != 0:
+                    users_cum_score.append((u.name, cumsum(solves_by_day).tolist()))
         return sorted(users_cum_score, key=lambda el: el[1][-1], reverse=True)[:10]
         
     def getChallengeById(self, idx) -> Challenge:
