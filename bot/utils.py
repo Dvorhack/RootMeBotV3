@@ -387,3 +387,10 @@ def chall_card(chall) -> Image :
 
     full = img_concat_h(cat_img, dif_img, score_img)
     return full
+
+async def not_implemented(channel: TextChannel) -> None:
+    """When a command is in the callable ones but not implemented"""
+    title = f'Command not implemented'
+    description = f'I\'m still under construction\n Buy a beer to my developpers if you want it quick'
+    embed = discord.Embed(color=Color.lighter_grey(), title=title, description=description)
+    await channel.send(embed=embed)

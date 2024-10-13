@@ -127,9 +127,9 @@ class CustomBot(commands.Bot):
                     #     await utils.new_solves(channel, solves_data)
                         # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             except Exception as e:
-                # channel = self.get_channel(self.BOT_CHANNEL)
-                # await utils.panic_message(channel, e, "challs worker")
-                raise e
+                channel = self.get_channel(self.BOT_CHANNEL)
+                await utils.panic_message(channel, e, "challs worker")
+                # raise e
 
             print("OK solves")
 
@@ -137,6 +137,19 @@ class CustomBot(commands.Bot):
     async def start(self, *args):
         await self.api.loadAllChallenges()
         return await super().start(*args)
+    
+    async def choose_user_autocomplete(
+            self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+
+        if current == '':
+            users = self.db_pool.getAllUsers()
+        else:
+            users = self.db_pool.getUserByName(current)
+
+        return [ app_commands.Choice(name=u.name, value=u.name) for u in users[:25]]
 
 
     def add_commands(self):
@@ -193,6 +206,7 @@ class CustomBot(commands.Bot):
         async def graph(ctx: commands.Context, n_days: int):
             last_solves = self.db_pool.getLastSolves(n_days)
             print(last_solves)
+            await utils.not_implemented(ctx)
 
         @self.hybrid_command(name="add_user", description="lol")
         async def add_user(ctx: commands.Context, input):
@@ -249,6 +263,7 @@ class CustomBot(commands.Bot):
                 await ctx.reply(f"User {name} not found in database")
 
         @self.hybrid_command(name="compare", description="lol")
+        @app_commands.autocomplete(input1=self.choose_user_autocomplete, input2=self.choose_user_autocomplete)
         async def compare(ctx: commands.Context, input1, input2):
             if input1.isdigit():
                 user1 = self.db_pool.getUserById(input1)
