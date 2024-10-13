@@ -173,7 +173,7 @@ class CustomBot(commands.Bot):
                 raise InitNotDone()
             return self.init_done
 
-        @self.hybrid_command(name="who_solved", description="lol")
+        @self.hybrid_command(name="who_solved", description="who solved a specifique challenge")
         @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
         async def who_solved(ctx: commands.Context, name):
             chall_name, solvers = self.db_pool.who_solved(name)
@@ -206,23 +206,23 @@ class CustomBot(commands.Bot):
                 if solves_data:
                     await utils.new_solves(ctx, solves_data)
         
-        @self.hybrid_command(name="scoreboard", description="lol")
+        @self.hybrid_command(name="scoreboard", description="scoreboard of registered users")
         async def scoreboard(ctx: commands.Context):
             users = self.db_pool.getAllUsers()
             await utils.scoreboard_msg(ctx, users)
 
-        @self.hybrid_command(name="today", description="lol")
+        @self.hybrid_command(name="today", description="today's scoreboard")
         async def today(ctx: commands.Context):
             users = self.db_pool.getTodayScoreboard()
             await utils.today_msg(ctx, users)
         
-        @self.hybrid_command(name="graph", description="lol")
+        @self.hybrid_command(name="graph", description="plot users score in last N days")
         async def graph(ctx: commands.Context, n_days: int):
             last_solves = self.db_pool.getLastSolves(n_days)
             print(last_solves)
             await utils.not_implemented(ctx)
 
-        @self.hybrid_command(name="add_user", description="lol")
+        @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, input):
             await ctx.defer()
 
@@ -249,7 +249,8 @@ class CustomBot(commands.Bot):
                 else:
                     await ctx.reply(f"User {input} not found")
 
-        @self.hybrid_command(name="remove_user", description="lol")
+        @self.hybrid_command(name="remove_user", description="remove a user from db")
+        @app_commands.autocomplete(name=self.choose_user_autocomplete)
         async def remove_user(ctx: commands.Context, input):
             if input.isdigit():
                 user = self.db_pool.getUserById(input)
@@ -262,7 +263,7 @@ class CustomBot(commands.Bot):
             else:
                 await ctx.reply(f"User {input} not found in database")
 
-        @self.hybrid_command(name="profile", description="lol")
+        @self.hybrid_command(name="profile", description="show many info about a user")
         @app_commands.autocomplete(name=self.choose_user_autocomplete)
         async def profile(ctx: commands.Context, name):
             await ctx.defer()
@@ -277,7 +278,7 @@ class CustomBot(commands.Bot):
             else:
                 await ctx.reply(f"User {name} not found in database")
 
-        @self.hybrid_command(name="compare", description="lol")
+        @self.hybrid_command(name="compare", description="compare progression of two users")
         @app_commands.autocomplete(input1=self.choose_user_autocomplete, input2=self.choose_user_autocomplete)
         async def compare(ctx: commands.Context, input1, input2):
             if input1.isdigit():
