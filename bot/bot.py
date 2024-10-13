@@ -151,6 +151,19 @@ class CustomBot(commands.Bot):
 
         return [ app_commands.Choice(name=u.name, value=u.name) for u in users[:25]]
 
+    async def choose_challenge_autocomplete(
+            self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> List[app_commands.Choice[str]]:
+
+        if current == '':
+            challenges =  []
+        else:
+            challenges = self.db_pool.getChallengesByName(current)
+
+        return [ app_commands.Choice(name=u.title, value=u.title) for u in challenges[:25]]
+
 
     def add_commands(self):
 
@@ -161,6 +174,7 @@ class CustomBot(commands.Bot):
             return self.init_done
 
         @self.hybrid_command(name="who_solved", description="lol")
+        @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
         async def who_solved(ctx: commands.Context, name):
             chall_name, solvers = self.db_pool.who_solved(name)
             await utils.who_solved_msg(ctx, chall_name, solvers)
@@ -249,6 +263,7 @@ class CustomBot(commands.Bot):
                 await ctx.reply(f"User {input} not found in database")
 
         @self.hybrid_command(name="profile", description="lol")
+        @app_commands.autocomplete(name=self.choose_user_autocomplete)
         async def profile(ctx: commands.Context, name):
             await ctx.defer()
             if name.isdigit():

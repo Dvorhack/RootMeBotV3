@@ -84,6 +84,11 @@ class DBManager():
         else:
             raise FoundMultipleChallenges(name, name=name)
         
+    def getChallengesByName(self, name) -> Challenge:
+        with Session(self.engine) as session:
+            x = session.scalars(select(Challenge).where(Challenge.title.ilike(f"%{name}%"))).all()
+        return x
+        
     def getAllUsers(self) -> Users:
         with Session(self.engine) as session:
             x = session.scalars(select(User)).all()
