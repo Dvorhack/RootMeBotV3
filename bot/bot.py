@@ -250,7 +250,7 @@ class CustomBot(commands.Bot):
                     await ctx.reply(f"User {input} not found")
 
         @self.hybrid_command(name="remove_user", description="remove a user from db")
-        @app_commands.autocomplete(name=self.choose_user_autocomplete)
+        @app_commands.autocomplete(input=self.choose_user_autocomplete)
         async def remove_user(ctx: commands.Context, input):
             if input.isdigit():
                 user = self.db_pool.getUserById(input)
