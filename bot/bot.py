@@ -219,8 +219,7 @@ class CustomBot(commands.Bot):
         @self.hybrid_command(name="graph", description="plot users score in last N days")
         async def graph(ctx: commands.Context, n_days: int):
             last_solves = self.db_pool.getLastSolves(n_days)
-            print(last_solves)
-            await utils.not_implemented(ctx)
+            await utils.graph_msg(ctx, last_solves, n_days)
 
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, input):

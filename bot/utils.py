@@ -7,10 +7,12 @@ from html import unescape
 from discord.utils import escape_markdown
 from discord.channel import TextChannel
 import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 import io
 from PIL import Image, ImageDraw, ImageFont
 import requests
 import numpy as np
+import textwrap
 
 
 # from database.manager import DatabaseManager
@@ -155,6 +157,52 @@ async def today_msg(ctx: commands.Context, users) -> None:
             embed.add_field(name=f"#{index+1} {user[0]}",value=f"Points: {user[1]}",inline=False)
 
     await ctx.send(file=file, embed=embed)
+
+async def graph_msg(ctx: commands.Context, last_solves: list, n_days: int) -> None:
+    def make_graph():
+        texts_color = "#d3d3d3"
+        graph_face_color = "#2b2d31"
+        legend_face_color = "#383a40"
+        font_path = "resources/LiberationSans-Bold.ttf"
+        custom_font = FontProperties(fname=font_path)
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        fig.subplots_adjust(bottom=0.3)
+        fig.patch.set_facecolor(graph_face_color)
+        ax.set_facecolor(graph_face_color)
+        days_axis = [d for d in range(n_days+2)]
+        for username, cumsum in last_solves:
+            wrapped_username = "\n".join(textwrap.wrap(username, width=12))
+            ax.plot(days_axis, cumsum, label=wrapped_username)
+            ax.legend()
+
+        ax.spines["bottom"].set_color(texts_color)
+        ax.spines["left"].set_color(texts_color)
+        ax.spines["top"].set_color("none")
+        ax.spines["right"].set_color("none")
+
+        ax.tick_params(axis="both", colors=texts_color)
+        ax.xaxis.label.set_color(color=texts_color)
+        ax.yaxis.label.set_color(color=texts_color)
+        ax.xaxis.label.set_fontproperties(custom_font)
+        ax.yaxis.label.set_fontproperties(custom_font)
+
+        legend = ax.legend(loc='upper left', bbox_to_anchor=(0, -0.15), ncol=3)
+        plt.setp(legend.get_texts(), fontproperties=custom_font, fontsize=13, color=texts_color)
+        legend.get_frame().set_facecolor(legend_face_color)
+        legend.get_frame().set_edgecolor("none")
+
+        ax.set_xlabel("days", fontproperties=custom_font)
+        ax.set_ylabel("points earned", fontproperties=custom_font)
+        plt.savefig("resources/graph.png")
+
+    make_graph()
+    file = discord.File("resources/graph.png", filename="graph.png")
+    message_title = f"Top 10 last {n_days} days"
+    embed = discord.Embed(color=Color.yellow(), title=message_title)
+    embed.set_image(url="attachment://graph.png")
+    await ctx.send(embed=embed, file=file)
+
 
 async def too_many_users_msg(ctx: commands.Context, name) -> None:
     title = f'Too many users found for {name} :woozy_face:'
