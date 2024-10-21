@@ -5,6 +5,7 @@ import os, json
 from typing import List, Optional
 from discord.channel import TextChannel
 import traceback
+import datetime
 
 from db_manager import DBManager
 from rm_api import RootMeAPI
@@ -75,7 +76,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        # await self.api.loadAllChallenges()
+        await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -98,13 +99,10 @@ class CustomBot(commands.Bot):
                 if len(new_challs):
                     full_chall_list = [self.db_pool.getChallengeById(x) for x in new_challs]
                     await utils.new_chall(channel, full_chall_list)
-                    # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
-            except Exception as e:
-                # channel = self.get_channel(self.BOT_CHANNEL)
-                # await utils.panic_message(channel, e, "challs worker")
-                raise e
+            except Exception:
+                utils.panic_message(channel, traceback.format_exc())
 
-            print("OK challs")
+            print(f"{datetime.datetime.now()} | OK challs")
 
     async def cron_check_solves(self) -> None:
         """Checks for new challs"""
@@ -121,17 +119,10 @@ class CustomBot(commands.Bot):
                 for user in self.db_pool.getAllUsers():
                     async for solve in self.api.updateUser(user):
                         await utils.new_solves(channel, solve)
-                    # solves_data = await self.api.updateUser(user)
-                    # if solves_data:
-                    #     print(solves_data)
-                    #     await utils.new_solves(channel, solves_data)
-                        # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
-            except Exception as e:
-                channel = self.get_channel(self.BOT_CHANNEL)
-                await utils.panic_message(channel, e, "challs worker")
-                # raise e
+            except Exception:
+                await utils.panic_message(channel, traceback.format_exc())
 
-            print("OK solves")
+            print(f"{datetime.datetime.now()} | OK solves")
 
 
     async def start(self, *args):
@@ -194,7 +185,6 @@ class CustomBot(commands.Bot):
             if len(new_challs):
                 print(new_challs)
                 await utils.new_chall(channel, new_challs)
-                # TODO: Martin à toi de jouer pour nous faire des belles annonces de nouveaux challs !
             await ctx.reply("Challenges updated successfully")
         
         @self.hybrid_command(name="update_solves", description="on garde ou pas ?")

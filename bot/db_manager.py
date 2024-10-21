@@ -245,7 +245,7 @@ class DBManager():
         with Session(self.engine) as session:
             chall5 = Challenge(
                 id = chall_data['id_trad'],
-                title = chall_data['titre'],
+                title = chall_data['titre'].replace("&#8217;", "'").replace("&nbsp;", " ").replace("&amp;", "&"),
                 subtitle = chall_data['soustitre'],
                 score = chall_data['score'],
                 category = chall_data['rubrique'],

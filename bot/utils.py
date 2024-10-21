@@ -33,6 +33,13 @@ from discord import Color
 Users = list[User]
 Challenges = list[Challenge]
 
+async def panic_message(channel: TextChannel, traceback) -> None:
+    """Runtime error"""
+    title = f"Kernel panic error"
+    description = traceback
+    embed = discord.Embed(color=Color.dark_red(), title=title, description=description)
+    await channel.send(embed=embed)
+
 async def init_start_msg(channel: TextChannel) -> None:
     """First time running message"""
     title = f'Good to see you :grin:'
