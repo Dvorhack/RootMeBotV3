@@ -167,6 +167,7 @@ class CustomBot(commands.Bot):
         @self.hybrid_command(name="who_solved", description="who solved a specifique challenge")
         @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
         async def who_solved(ctx: commands.Context, name):
+            # TODO: handle too many challs and chall not found
             chall_name, solvers = self.db_pool.who_solved(name)
             await utils.who_solved_msg(ctx, chall_name, solvers)
 
@@ -208,26 +209,28 @@ class CustomBot(commands.Bot):
         
         @self.hybrid_command(name="graph", description="plot users score in last N days")
         async def graph(ctx: commands.Context, n_days: int):
+            # TODO: handle negative days
             last_solves = self.db_pool.getLastSolves(n_days)
             await utils.graph_msg(ctx, last_solves, n_days)
 
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
-        async def add_user(ctx: commands.Context, input):
+        async def add_user(ctx: commands.Context, name_or_id):
             await ctx.defer()
 
-            if input.isdigit():
-                users = await self.api.fetchUser(input)
+            if name_or_id.isdigit():
+                users = await self.api.fetchUser(name_or_id)
                 try:
-                    await self.api.loadUser(idx=input)
+                    await self.api.loadUser(idx=name_or_id)
                     await utils.added_ok(ctx, users['nom'])
                 except :
-                    await ctx.reply(f"User with ID {input} not found")
+                    # await ctx.reply(f"User with ID {input} not found")
+                    await utils.user_not_found(ctx, name_or_id, by_id=True)
 
             else :
-                users = await self.api.fetchUserByName(input)
+                users = await self.api.fetchUserByName(name_or_id)
 
                 if len(users) > 25:
-                    raise TooManyUsers(input, name=input)
+                    raise TooManyUsers(name_or_id, name=name_or_id)
                 elif len(users) > 1:
                     await self.possible_users(ctx, users.values())
                 elif len(users) == 1:
@@ -236,36 +239,39 @@ class CustomBot(commands.Bot):
                     # asyncio.sleep()
                     # await ctx.send(f"{users['0']['nom']} added")
                 else:
-                    await ctx.reply(f"User {input} not found")
+                    # await ctx.reply(f"User {input} not found")
+                    await utils.user_not_found(ctx, name_or_id, by_id=False)
 
         @self.hybrid_command(name="remove_user", description="remove a user from db")
-        @app_commands.autocomplete(input=self.choose_user_autocomplete)
-        async def remove_user(ctx: commands.Context, input):
-            if input.isdigit():
-                user = self.db_pool.getUserById(input)
+        @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
+        async def remove_user(ctx: commands.Context, name_or_id:str):
+            if name_or_id.isdigit():
+                user = self.db_pool.getUserById(name_or_id)
             else:
-                user = self.db_pool.getUserByName(input)
+                user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
                 self.db_pool.deleteUserByName(user.name)
                 await utils.removed_ok(ctx, user.name)
             else:
-                await ctx.reply(f"User {input} not found in database")
+                # await ctx.reply(f"User {input} not found in database")
+                await utils.user_not_found_in_db(ctx, name_or_id)
 
         @self.hybrid_command(name="profile", description="show many info about a user")
-        @app_commands.autocomplete(name=self.choose_user_autocomplete)
-        async def profile(ctx: commands.Context, name):
+        @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
+        async def profile(ctx: commands.Context, name_or_id: str):
             await ctx.defer()
-            if name.isdigit():
-                user = self.db_pool.getUserById(name)
+            if name_or_id.isdigit():
+                user = self.db_pool.getUserById(name_or_id)
             else: 
-                user = self.db_pool.getUserByName(name)
+                user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
                 user_stats = self.db_pool.getStats(user.id)    
                 await utils.profile(ctx, user, user_stats)
             else:
-                await ctx.reply(f"User {name} not found in database")
+                # await ctx.reply(f"User {name} not found in database")
+                await utils.user_not_found_in_db(ctx, name_or_id)
 
         @self.hybrid_command(name="compare", description="compare progression of two users")
         @app_commands.autocomplete(input1=self.choose_user_autocomplete, input2=self.choose_user_autocomplete)
@@ -287,9 +293,11 @@ class CustomBot(commands.Bot):
                 await utils.compare_graph(ctx, user1, user1_stats, user2, user2_stats)
             else:
                 if not user1:
-                    await ctx.reply(f"User {input1} not found in database")
+                    # await ctx.reply(f"User {input1} not found in database")
+                    await utils.user_not_found_in_db(ctx, input1)
                 if not user2:
-                    await ctx.reply(f"User {input2} not found in database")
+                    # await ctx.reply(f"User {input2} not found in database")
+                    await utils.user_not_found_in_db(ctx, input2)
 
     async def possible_users(self, channel: TextChannel, auteurs) -> None:
             message = f'Multiple users found :'

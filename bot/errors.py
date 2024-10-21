@@ -1,4 +1,4 @@
-from discord.ext import tasks, commands, tasks
+from discord.ext import tasks, commands
 
 
 class InitNotDone(commands.CheckFailure):
