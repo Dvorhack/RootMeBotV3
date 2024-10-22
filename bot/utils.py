@@ -253,8 +253,9 @@ async def removed_ok(ctx: commands.Context, name) -> None:
 async def who_solved_msg(ctx: commands.Context, chall_name, solvers: Users) -> None:
     title = f'Solvers of {chall_name} :sunglasses:'
     embed = discord.Embed(color=Color.purple(), title=title, description="")
+    solvers = sorted(solvers, key=lambda s: s[1], reverse=True)
     for users, date in solvers:
-        embed.add_field(name=f"{users.name}",value=f"Solved on {date}",inline=False)
+        embed.add_field(name=f"{users.name}",value=f"Solved on {date.strftime('%d %B %Y')}",inline=False)
 
     await ctx.reply(embed=embed)
 

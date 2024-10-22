@@ -136,7 +136,7 @@ class DBManager():
             session.delete(user_to_delete)
             session.commit()
 
-    def new_solves2(self, user_id, api_solves):
+    def new_solves(self, user_id, api_solves):
         for api_solve in api_solves:
             data_new_solve = self.add_solve_to_user(user_id, api_solve)
             if data_new_solve is not None:  # There is a new solve
@@ -188,7 +188,7 @@ class DBManager():
             chall = x[0]
             solvers = []
             for s in chall.users:
-                date = self.execute(select(Solve.date).where(Solve.challenge_id == select(Challenge.id).where(Challenge.title == chall.title)).where(Solve.user_id == select(User.id).where(User.name == s.user.name)))[0][0].strftime("%d %B %Y")
+                date = self.execute(select(Solve.date).where(Solve.challenge_id == select(Challenge.id).where(Challenge.title == chall.title)).where(Solve.user_id == select(User.id).where(User.name == s.user.name)))[0][0]
                 solvers.append((s.user, date))
         return chall.title, solvers
 
