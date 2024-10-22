@@ -91,7 +91,7 @@ async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, in
     embed.set_thumbnail(url=pp)
 
 
-    embed.add_field(name=f'{chall.title}', value="") #value=f'{solve[1].subtitle}'
+    embed.add_field(name=f'{chall.title}', value="")
     if next_user:  # There is someone to overtake
         embed.set_footer(text=f'{points_to_reach} points to overtake {next_user}')
     else:
@@ -211,8 +211,8 @@ async def removed_ok(ctx: commands.Context, name) -> None:
 async def who_solved_msg(ctx: commands.Context, chall_name, solvers: Users) -> None:
     title = f'Solvers of {chall_name} :sunglasses:'
     embed = discord.Embed(color=Color.purple(), title=title, description="")
-    for x in solvers:
-        embed.add_field(name=f"{x.name}",value=f"",inline=False)
+    for users, date in solvers:
+        embed.add_field(name=f"{users.name}",value=f"Solved on {date}",inline=False)
 
     await ctx.reply(embed=embed)
 
@@ -286,7 +286,7 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
         chart_img = create_pie_chart([100-stat['rate'], stat['rate']], f"{stat['rate']}%")
         images.append(img_concat_h(text_img, chart_img))
 
-    full_scoring = concatenate_images(images).save('resources/score.png')
+    concatenate_images(images).save('resources/score.png')
     file = discord.File('resources/score.png', filename='score.png')
 
     message_title = f"Profile of {user.name}"

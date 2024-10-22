@@ -185,7 +185,8 @@ class DBManager():
             chall = x[0]
             solvers = []
             for s in chall.users:
-                solvers.append(s.user)
+                date = self.execute(select(Solve.date).where(Solve.challenge_id == select(Challenge.id).where(Challenge.title == chall.title)).where(Solve.user_id == select(User.id).where(User.name == s.user.name)))[0][0].strftime("%d %B %Y")
+                solvers.append((s.user, date))
         return chall.title, solvers
 
     def getStats(self, user_id):
