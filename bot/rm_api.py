@@ -36,7 +36,15 @@ class RootMeAPI(aiohttp.ClientSession):
     
     async def updateUser(self, user):
         user_data = await self.fetchUser(user.id)
-        for solve in self.db.new_solves(user.id, user_data["validations"]):
+        api_solves = reversed(user_data["validations"])  # sort from oldest to newest
+        for solve in self.db.new_solves2(user.id, api_solves):
+            if isinstance(solve, dict):
+                print(f"Le challenge {solve['titre']} n'existe pas dans la bdd. On l'ajoute...")
+                chall_id = await self.loadChallenge(solve["id_challenge"])
+                if chall_id:
+                    print(f"Le challenge {solve['titre']} a bien été ajouté dans la bdd. On ajoute le solve...")
+                    solve = self.db.add_solve_to_user(user.id, solve)
+            
             yield solve
             await asyncio.sleep(0.5)
 

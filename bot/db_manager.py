@@ -115,14 +115,14 @@ class DBManager():
                     users_cum_score.append((u.name, cumsum(solves_by_day).tolist()))
         return sorted(users_cum_score, key=lambda el: el[1][-1], reverse=True)[:10]
         
-    def getChallengeById(self, idx) -> Challenge:
-        x = self.execute(select(Challenge).where(Challenge.id == idx))
+    def getChallengeById(self, chall_id) -> Challenge:
+        x = self.execute(select(Challenge).where(Challenge.id == chall_id))
         if len(x) == 1:
             return x[0][0]
         elif len(x) == 0:
             return None
         else:
-            raise Exception(f"Database corrupted: multiple challenges with id {idx}")
+            raise Exception(f"Database corrupted: multiple challenges with id {chall_id}")
     
     def getChallengeByIdBatch(self, ids):
         return self.execute(select(Challenge).where(Challenge.id.in_(ids)))
@@ -136,43 +136,46 @@ class DBManager():
             session.delete(user_to_delete)
             session.commit()
 
-    def new_solves(self, idx, api_solves):
-        data_new_solves = []  # list of tuples of form: (user, chall, next_user, points_to_next, is_first_blood)
+    def new_solves2(self, user_id, api_solves):
+        for api_solve in api_solves:
+            data_new_solve = self.add_solve_to_user(user_id, api_solve)
+            if data_new_solve is not None:  # There is a new solve
+                yield data_new_solve
+
+    def add_solve_to_user(self, user_id, api_solve):
         with Session(self.engine) as session:
             session.expire_on_commit = False
-            user = session.scalar(select(User).where(User.id == idx))
+            user = session.scalar(select(User).where(User.id == user_id))
             all_users = sorted(self.getAllUsers(), key=lambda u: u.score)
-            #print(all_users)
-            db_solves_id = session.scalars(select(Solve.challenge_id).where(Solve.user_id == idx)).all()
-            for api_solve in reversed(api_solves):  # sort from oldest to newest
-                if int(api_solve["id_challenge"]) not in db_solves_id:
-                    print(f"new challenge solved by user {idx}: {api_solve['titre']}")
-                    chall_obj = self.getChallengeById(api_solve["id_challenge"])
-                    chall_obj = session.merge(chall_obj)
-                    print(f"Adding solved challenge {chall_obj.title}")
-                    first_blood = (len(chall_obj.users) == 0)
-                    solve = Solve(user_id=idx, date=datetime.strptime(api_solve['date'], "%Y-%m-%d %H:%M:%S"))
-                    session.add(solve)
-                    solve.challenge = chall_obj
+            db_solves_id = session.scalars(select(Solve.challenge_id).where(Solve.user_id == user_id)).all()
+            if int(api_solve["id_challenge"]) in db_solves_id:
+                return None  # challenge already solved by the user
+            
+            chall_obj = self.getChallengeById(api_solve["id_challenge"])
+            if chall_obj is None:  # challenge not yet in db => return it
+                return api_solve
+            chall_obj = session.merge(chall_obj)
+            print(f"new challenge solved by user {user_id}: {api_solve['titre']}")
+            print(f"Adding solved challenge {chall_obj.title}")
+            first_blood = (len(chall_obj.users) == 0)
+            solve = Solve(user_id=user_id, date=datetime.strptime(api_solve['date'], "%Y-%m-%d %H:%M:%S"))
+            session.add(solve)
+            solve.challenge = chall_obj
 
-                    user.challenges.append(solve)
-                    user.score += chall_obj.score
-                    next_user = [u for u in all_users if u.score > user.score]
-                    if not next_user:
-                        #  He is the first in the scoreboard
-                        data_new_solve = (user, chall_obj, None, None, first_blood)
-                        # data_new_solves.append((user, chall_obj, None, None, first_blood))
-                    else:
-                        next_user = next_user[0]
-                        points_to_next = next_user.score - user.score
-                        data_new_solve = (user, chall_obj, next_user.name, points_to_next, first_blood)
-                        # data_new_solves.append((user, chall_obj, next_user.name, points_to_next, first_blood))
-                        # print(f"{data_new_solves = }")
-                    data_new_solves.append(data_new_solve)
-                    yield data_new_solve
-                    session.add(solve)
+            user.challenges.append(solve)
+            user.score += chall_obj.score
+            next_user = [u for u in all_users if u.score > user.score]
+            if not next_user:
+                #  He is the first in the scoreboard
+                data_new_solve = (user, chall_obj, None, None, first_blood)
+            else:
+                next_user = next_user[0]
+                points_to_next = next_user.score - user.score
+                data_new_solve = (user, chall_obj, next_user.name, points_to_next, first_blood)
+
+            session.add(solve)
             session.commit()
-        return data_new_solves
+            return data_new_solve
     
     def who_solved(self, name):
         with Session(self.engine) as session:

@@ -76,7 +76,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        await self.api.loadAllChallenges()
+        # await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
