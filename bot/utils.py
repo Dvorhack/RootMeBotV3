@@ -220,6 +220,8 @@ async def graph_msg(ctx: commands.Context, last_solves: list, n_days: int) -> No
         ax.set_ylabel("points earned", fontproperties=custom_font)
         plt.savefig("resources/graph.png")
 
+        plt.close()
+
     make_graph()
     file = discord.File("resources/graph.png", filename="graph.png")
     message_title = f"Top 10 last {n_days} days"
@@ -292,6 +294,7 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
         img = Image.open(buf)
+        plt.close()
         return img
 
     def img_concat_h(im1, im2):
@@ -327,6 +330,7 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
         images.append(img_concat_h(text_img, chart_img))
 
     concatenate_images(images).save('resources/score.png')
+    plt.close()
     file = discord.File('resources/score.png', filename='score.png')
 
     message_title = f"Profile of {user.name}"
@@ -375,6 +379,7 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
 
         buf = io.BytesIO()
         plt.savefig(buf, format='png')
+        plt.close()
         img = Image.open(buf)
         return img
 
