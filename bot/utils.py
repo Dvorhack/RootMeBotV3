@@ -33,6 +33,13 @@ from discord import Color
 Users = list[User]
 Challenges = list[Challenge]
 
+async def panic_message(channel: TextChannel, traceback: SyntaxWarning) -> None:
+    """Runtime error"""
+    title = f"C'est pas un bug c'est une feature"
+    description = traceback
+    embed = discord.Embed(color=Color.dark_red(), title=title, description=description)
+    await channel.send(embed=embed)
+
 async def init_start_msg(channel: TextChannel) -> None:
     """First time running message"""
     title = f'Good to see you :grin:'
@@ -48,9 +55,42 @@ async def init_end_msg(channel: TextChannel) -> None:
     await channel.send(embed=embed)
 
 async def init_not_done_msg(ctx: commands.Context) -> None:
-    title = f'Initialization not done :confused:'
+    title = f"Initialization not done :confused:"
     description = f'Please wait a bit...'
     embed = discord.Embed(color=Color.orange(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def negative_days(ctx: commands.Context) -> None:
+    title = f"Invalid number of days :face_with_spiral_eyes:"
+    description = f"Number of days must be positive!"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def challenge_not_found(ctx: commands.Context, chall_name: str) -> None:
+    title = f"Challenge {chall_name} not found :woozy_face:"
+    description = f"Please use the autocompletion"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def too_many_challenges(ctx: commands.Context, chall_name: str) -> None:
+    title = f"Multiple challs found for {chall_name} :face_with_spiral_eyes:"
+    description = f"Start typing a chall and select the one you want"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def user_not_found(ctx: commands.Context, name_or_id: str, by_id: bool) -> None:
+    title = f"User not found :woozy_face:"
+    if by_id:
+        description = f"User with id {name_or_id} not found"
+    else:
+        description = f"User {name_or_id} not found"
+    embed = discord.Embed(color=Color.red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def user_not_found_in_db(ctx: commands.Context, name: str) -> None:
+    title = f"User not found in database :woozy_face:"
+    description = f"User {name} not found in database"
+    embed = discord.Embed(color=Color.red(), title=title, description=description)
     await ctx.reply(embed=embed)
 
 async def new_chall(channel: TextChannel, chall_list) -> None:
