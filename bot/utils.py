@@ -60,6 +60,24 @@ async def init_not_done_msg(ctx: commands.Context) -> None:
     embed = discord.Embed(color=Color.orange(), title=title, description=description)
     await ctx.reply(embed=embed)
 
+async def negative_days(ctx: commands.Context) -> None:
+    title = f"Invalid number of days :face_with_spiral_eyes:"
+    description = f"Number of days must be positive!"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def challenge_not_found(ctx: commands.Context, chall_name: str) -> None:
+    title = f"Challenge {chall_name} not found :woozy_face:"
+    description = f"Please use the autocompletion"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
+async def too_many_challenges(ctx: commands.Context, chall_name: str) -> None:
+    title = f"Multiple challs found for {chall_name} :face_with_spiral_eyes:"
+    description = f"Start typing a chall and select the one you want"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
 async def user_not_found(ctx: commands.Context, name_or_id: str, by_id: bool) -> None:
     title = f"User not found :woozy_face:"
     if by_id:

@@ -166,10 +166,15 @@ class CustomBot(commands.Bot):
 
         @self.hybrid_command(name="who_solved", description="who solved a specifique challenge")
         @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
-        async def who_solved(ctx: commands.Context, name):
-            # TODO: handle too many challs and chall not found
-            chall_name, solvers = self.db_pool.who_solved(name)
-            await utils.who_solved_msg(ctx, chall_name, solvers)
+        async def who_solved(ctx: commands.Context, name: str):
+            try:
+                chall_name, solvers = self.db_pool.who_solved(name)
+            except ChallengeNotFound:
+                await utils.challenge_not_found(ctx, name)
+            except FoundMultipleChallenges:
+                await utils.too_many_challenges(ctx, name)
+            else:
+                await utils.who_solved_msg(ctx, chall_name, solvers)
 
 
         @self.hybrid_command(name="sync", description="lol")
@@ -209,9 +214,11 @@ class CustomBot(commands.Bot):
         
         @self.hybrid_command(name="graph", description="plot users score in last N days")
         async def graph(ctx: commands.Context, n_days: int):
-            # TODO: handle negative days
-            last_solves = self.db_pool.getLastSolves(n_days)
-            await utils.graph_msg(ctx, last_solves, n_days)
+            if n_days <= 0:
+                await utils.negative_days(ctx)
+            else:
+                last_solves = self.db_pool.getLastSolves(n_days)
+                await utils.graph_msg(ctx, last_solves, n_days)
 
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, name_or_id):
@@ -236,8 +243,6 @@ class CustomBot(commands.Bot):
                 elif len(users) == 1:
                     await self.api.loadUser(idx=int(users['0']['id_auteur']))
                     await utils.added_ok(ctx, users['0']['nom'])
-                    # asyncio.sleep()
-                    # await ctx.send(f"{users['0']['nom']} added")
                 else:
                     # await ctx.reply(f"User {input} not found")
                     await utils.user_not_found(ctx, name_or_id, by_id=False)
