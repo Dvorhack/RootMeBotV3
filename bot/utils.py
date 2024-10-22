@@ -99,8 +99,8 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
         embed = discord.Embed(color=Color.dark_green(), title=title, description="")
         embed.add_field(name=f'{chall.title}', value=f'{chall.subtitle}')
         
-        chall_card(chall).save('resources/chall_card.png')
-        file = discord.File('resources/chall_card.png', filename='chall_card.png')
+        chall_card(chall).save('/tmp/chall_card.png')
+        file = discord.File('/tmp/chall_card.png', filename='chall_card.png')
         embed.set_image(url='attachment://chall_card.png')
 
         await channel.send(file=file, embed=embed)
@@ -116,8 +116,8 @@ async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, in
     description = f'*New score : {user.score}*'
     embed = discord.Embed(color=Color.gold(), title=title, description=description)
     
-    chall_card(chall).save('resources/chall_card.png')
-    file = discord.File('resources/chall_card.png', filename='chall_card.png')
+    chall_card(chall).save('/tmp/chall_card.png')
+    file = discord.File('/tmp/chall_card.png', filename='chall_card.png')
     embed.set_image(url='attachment://chall_card.png')
 
 
@@ -218,12 +218,12 @@ async def graph_msg(ctx: commands.Context, last_solves: list, n_days: int) -> No
 
         ax.set_xlabel("days", fontproperties=custom_font)
         ax.set_ylabel("points earned", fontproperties=custom_font)
-        plt.savefig("resources/graph.png")
+        plt.savefig("/tmp/graph.png")
 
         plt.close()
 
     make_graph()
-    file = discord.File("resources/graph.png", filename="graph.png")
+    file = discord.File("/tmp/graph.png", filename="graph.png")
     message_title = f"Top 10 last {n_days} days"
     embed = discord.Embed(color=Color.yellow(), title=message_title)
     embed.set_image(url="attachment://graph.png")
@@ -329,9 +329,9 @@ async def profile(ctx: commands.Context, user:User, stats) -> None:
         chart_img = create_pie_chart([100-stat['rate'], stat['rate']], f"{stat['rate']}%")
         images.append(img_concat_h(text_img, chart_img))
 
-    concatenate_images(images).save('resources/score.png')
+    concatenate_images(images).save('/tmp/score.png')
     plt.close()
-    file = discord.File('resources/score.png', filename='score.png')
+    file = discord.File('/tmp/score.png', filename='score.png')
 
     message_title = f"Profile of {user.name}"
     embed = discord.Embed(color=Color.blue(), title=message_title, description=f"*ID : {user.id}\nScore : {user.score}*")
@@ -419,11 +419,11 @@ async def compare_graph(ctx: commands.Context, user1, user1_stats, user2, user2_
     categories_title = categories_image(categories, profile1_chart.height)
 
     full_image = img_concat_h(profile1_chart, categories_title, profile2_chart)
-    full_image.save('resources/test.png')
+    full_image.save('/tmp/test.png')
 
     embed = discord.Embed(color=Color.blue(), title=f"{user1.name} VS {user2.name}", description=f":blue_circle: **{user1.name}** - *Score : {user1.score}*\n:orange_circle: **{user2.name}** - *Score : {user2.score}*")
  
-    file = discord.File('resources/test.png', filename='test.png')
+    file = discord.File('/tmp/test.png', filename='test.png')
     embed.set_image(url='attachment://test.png')
     await ctx.send(embed=embed, file=file)  
 
