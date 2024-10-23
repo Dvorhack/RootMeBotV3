@@ -151,6 +151,10 @@ async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
 
     embed = discord.Embed(color=Color.yellow(), title=message_title, description="")
     embed.set_thumbnail(url="attachment://trophy.png")
+
+    if len(users) == 0 : embed.description = f'Mmmmh...\n\'will work better if you add some users no ? :wink:'
+    elif len(users) == 1 : embed.description = f'A scoreboard with only one user ? Really ?'
+
     for index, user in enumerate(users):
         if index < 3:
             medal = medals.get(index, "")
@@ -173,6 +177,10 @@ async def today_msg(ctx: commands.Context, users) -> None:
 
     embed = discord.Embed(color=Color.yellow(), title=message_title, description="")
     embed.set_thumbnail(url="attachment://calendar.png")
+
+    if len(users) == 0:
+        embed.description = f'No solves for today (yet) ! \nMaybe you ?'
+
     for index, user in enumerate(users):
         if index < 3:
             medal = medals.get(index, "")
@@ -250,9 +258,11 @@ async def removed_ok(ctx: commands.Context, name) -> None:
     embed = discord.Embed(color=Color.green(), title=message_title, description=message)
     await ctx.reply(embed=embed)
 
-async def who_solved_msg(ctx: commands.Context, chall_name, solvers: Users) -> None:
+async def who_solved_msg(ctx: commands.Context, chall_name, solvers) -> None:
     title = f'Solvers of {chall_name} :sunglasses:'
     embed = discord.Embed(color=Color.purple(), title=title, description="")
+    if len(solvers) == 0 : embed.description = f'Nobody has solved {chall_name}. \nTry hard and be the first ! :index_pointing_at_the_viewer:'
+    if len(solvers) == 1 : embed.description = f'That\'s what we call a giga boss :heart_eyes:'
     for users, date in solvers:
         embed.add_field(name=f"{users.name}",value=f"Solved on {date}",inline=False)
 
