@@ -37,7 +37,7 @@ class RootMeAPI(aiohttp.ClientSession):
     async def updateUser(self, user):
         user_data = await self.fetchUser(user.id)
         api_solves = reversed(user_data["validations"])  # sort from oldest to newest
-        for solve in self.db.new_solves2(user.id, api_solves):
+        for solve in self.db.new_solves(user.id, api_solves):
             if isinstance(solve, dict):
                 print(f"Le challenge {solve['titre']} n'existe pas dans la bdd. On l'ajoute...")
                 chall_id = await self.loadChallenge(solve["id_challenge"])

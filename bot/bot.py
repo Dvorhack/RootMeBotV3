@@ -140,7 +140,8 @@ class CustomBot(commands.Bot):
         else:
             users = self.db_pool.getUserByName(current)
 
-        return [ app_commands.Choice(name=u.name, value=u.name) for u in users[:25]]
+        choices = [app_commands.Choice(name=u.name, value=u.name) for u in users[:25]]
+        return sorted(choices, key=lambda choice: choice.name.lower())
 
     async def choose_challenge_autocomplete(
             self,
@@ -153,7 +154,8 @@ class CustomBot(commands.Bot):
         else:
             challenges = self.db_pool.getChallengesByName(current)
 
-        return [ app_commands.Choice(name=u.title, value=u.title) for u in challenges[:25]]
+        choices = [app_commands.Choice(name=u.title, value=u.title) for u in challenges[:25]]
+        return sorted(choices, key=lambda choice: choice.name.lower())
 
 
     def add_commands(self):
