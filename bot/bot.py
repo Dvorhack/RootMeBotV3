@@ -76,7 +76,7 @@ class CustomBot(commands.Bot):
         
         await self.change_presence(status=discord.Status.online, activity=discord.Game("Busy: fetching challenges"))
         await utils.init_start_msg(channel)
-        # await self.api.loadAllChallenges()
+        await self.api.loadAllChallenges()
         await utils.init_end_msg(channel)
         await self.change_presence(status=discord.Status.online, activity=discord.Game("I'm ready"))
 
@@ -216,8 +216,11 @@ class CustomBot(commands.Bot):
         
         @self.hybrid_command(name="graph", description="plot users score in last N days")
         async def graph(ctx: commands.Context, n_days: int):
+            max_days = 4000
             if n_days <= 0:
                 await utils.negative_days(ctx)
+            elif n_days > max_days:
+                await utils.too_many_days(ctx, max_days)
             else:
                 last_solves = self.db_pool.getLastSolves(n_days)
                 await utils.graph_msg(ctx, last_solves, n_days)

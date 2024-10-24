@@ -66,6 +66,12 @@ async def negative_days(ctx: commands.Context) -> None:
     embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
     await ctx.reply(embed=embed)
 
+async def too_many_days(ctx: commands.Context, max_days: int) -> None:
+    title = f"Too many days :exploding_head:"
+    description = f"You can plot the last {max_days} days at most!"
+    embed = discord.Embed(color=Color.brand_red(), title=title, description=description)
+    await ctx.reply(embed=embed)
+
 async def challenge_not_found(ctx: commands.Context, chall_name: str) -> None:
     title = f"Challenge {chall_name} not found :woozy_face:"
     description = f"Please use the autocompletion"
