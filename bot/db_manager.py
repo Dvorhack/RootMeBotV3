@@ -179,7 +179,7 @@ class DBManager():
     
     def who_solved(self, name):
         with Session(self.engine) as session:
-            x = session.scalars(select(Challenge).where(Challenge.title.ilike(f"%{name}%"))).all()
+            x = session.scalars(select(Challenge).where(Challenge.title.ilike(name))).all()
             if len(x) == 0:
                 raise ChallengeNotFound(name, name=name)
             elif len(x) > 1:
