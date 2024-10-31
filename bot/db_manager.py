@@ -143,6 +143,7 @@ class DBManager():
                 yield data_new_solve
 
     def add_solve_to_user(self, user_id, api_solve):
+        # TODO: manage transition to the next hundred or thousand
         with Session(self.engine) as session:
             session.expire_on_commit = False
             user = session.scalar(select(User).where(User.id == user_id))
