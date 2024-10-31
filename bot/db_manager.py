@@ -144,6 +144,7 @@ class DBManager():
 
     def add_solve_to_user(self, user_id, api_solve):
         # TODO: manage transition to the next hundred or thousand
+        # TODO: cleared category
         with Session(self.engine) as session:
             session.expire_on_commit = False
             user = session.scalar(select(User).where(User.id == user_id))
