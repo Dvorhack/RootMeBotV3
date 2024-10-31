@@ -111,9 +111,8 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
 
         await channel.send(file=file, embed=embed)
 
-async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool]) -> None:
-        
-    user, chall, next_user, points_to_reach, firstblood = solve
+async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool, list]) -> None:
+    user, chall, next_user, points_to_reach, firstblood, overtakens = solve
     # for solve in solve_list:
     if firstblood : emoji=":drop_of_blood:"
     else : emoji=":partying_face:"
@@ -143,6 +142,19 @@ async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, in
     else:
         embed.set_footer(text=f"{user.name} is still on top of the world!")
     await channel.send(file=file, embed=embed)
+    if overtakens:
+        await overtook_msg(channel, user.name, overtakens)
+
+async def overtook_msg(channel: TextChannel, user_name: str, overtakens: list) -> None:
+    if len(overtakens) == 1:
+        title = f"Scoreboard changes! :rocket:"
+        description = f"Congratz {user_name}! You've just overtaken {overtakens[0]} in the ranking! Keep going!"
+    else:
+        title = f"{len(overtakens)} in a row! Big changes in scoreboard! :rocket:"
+        users_overtaken = ", ".join(overtakens[:-1]) + " and " + overtakens[-1]
+        description = f"{user_name} is unstoppable! You've overtaken {users_overtaken}! You're superhuman!"
+    embed = discord.Embed(color=Color.dark_gold(), title=title, description=description)
+    await channel.send(embed=embed)
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {

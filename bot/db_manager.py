@@ -163,15 +163,25 @@ class DBManager():
             solve.challenge = chall_obj
 
             user.challenges.append(solve)
+            next_users = [u for u in all_users if u.score > user.score]
             user.score += chall_obj.score
-            next_user = [u for u in all_users if u.score > user.score]
-            if not next_user:
+            overtakens = []
+            if not next_users:
                 #  He is the first in the scoreboard
-                data_new_solve = (user, chall_obj, None, None, first_blood)
+                data_new_solve = (user, chall_obj, None, None, first_blood, overtakens)
             else:
-                next_user = next_user[0]
-                points_to_next = next_user.score - user.score
-                data_new_solve = (user, chall_obj, next_user.name, points_to_next, first_blood)
+                while user.score > next_users[0].score:
+                    overtakens.append(next_users[0].name)
+                    next_users.pop(0)
+                    if len(next_users) == 0:
+                        next_user_name = None
+                        points_to_next = None
+                        break
+                if next_users:
+                    next_user = next_users[0]
+                    points_to_next = next_user.score - user.score
+                    next_user_name = next_user.name
+                data_new_solve = (user, chall_obj, next_user_name, points_to_next, first_blood, overtakens)
 
             session.add(solve)
             session.commit()
