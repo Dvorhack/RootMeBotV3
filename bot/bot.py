@@ -168,6 +168,11 @@ class CustomBot(commands.Bot):
                 raise InitNotDone()
             return self.init_done
 
+        @self.hybrid_command(name="help", description="available commands")
+        async def help(ctx: commands.Context):
+            print(self.all_commands)
+            await utils.help_msg(ctx, self.all_commands.items())
+
         @self.hybrid_command(name="who_solved", description="who solved a specifique challenge")
         @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
         async def who_solved(ctx: commands.Context, name: str):

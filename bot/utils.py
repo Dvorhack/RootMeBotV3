@@ -33,6 +33,13 @@ from discord import Color
 Users = list[User]
 Challenges = list[Challenge]
 
+async def help_msg(ctx: commands.Context, all_commands: list[tuple[str, commands.HybridCommand]]) -> None:
+    title = f"List of available commands :thinking:"
+    embed = discord.Embed(color=Color.og_blurple(), title=title, description="")
+    for name, cmd in all_commands:
+        embed.add_field(name=f"**/{name}**", value=cmd.description, inline=False)
+    await ctx.reply(embed=embed)
+
 async def panic_message(channel: TextChannel, traceback: SyntaxWarning) -> None:
     """Runtime error"""
     title = f"C'est pas un bug c'est une feature"
@@ -285,7 +292,7 @@ async def who_solved_msg(ctx: commands.Context, chall_name, solvers) -> None:
     if len(solvers) == 1 : embed.description = f'That\'s what we call a giga boss :heart_eyes:'
 
     for users, date in solvers:
-        embed.add_field(name=f"{users.name}",value=f"Solved on {date.strftime('%d %B %Y')}",inline=False)
+        embed.add_field(name=f"{users.name}", value=f"Solved on {date.strftime('%d %B %Y')}", inline=False)
 
     await ctx.reply(embed=embed)
 
