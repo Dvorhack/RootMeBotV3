@@ -101,21 +101,26 @@ class RootMeAPI(aiohttp.ClientSession):
             'User-Agent': 'toto'
         }
         print(url)
-        async with self.get(url, cookies=cookies, headers=headers, params=params) as response:
-            text = await response.text()
-            # print(text)
-            try:
-                js = json.loads(text)
-                return js
-            except Exception as e:
-                print(f"Exception {e} occured")
-                print(text)
-                """
-                <html><body><h1>504 Gateway Time-out</h1>
-                The server didn't respond in time.
-                </body></html>
+        try:
+            async with self.get(url, cookies=cookies, headers=headers, params=params) as response:
+                text = await response.text()
+                # print(text)
+                try:
+                    js = json.loads(text)
+                    return js
+                except Exception as e:
+                    print(f"Exception {e} occured")
+                    print(text)
+                    """
+                    <html><body><h1>504 Gateway Time-out</h1>
+                    The server didn't respond in time.
+                    </body></html>
+    
+                    """
+        except Exception as e:
+            print(f"Exception {e} occured")
+            print(text)
 
-                """
 
 
 async def main():
