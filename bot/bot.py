@@ -233,6 +233,25 @@ class CustomBot(commands.Bot):
                 last_solves = self.db_pool.getLastSolves(n_days)
                 await utils.graph_msg(ctx, last_solves, n_days)
 
+        @self.hybrid_command(name="last_solves", description="last solves for a hacker")
+        @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
+        async def last_solves(ctx: commands.Context, name_or_id: str, n_days: int):
+            await ctx.defer()
+            name_or_id = discord.utils.escape_markdown(name_or_id)
+            if name_or_id.isdigit():
+                user = self.db_pool.getUserById(name_or_id)
+            else: 
+                user = self.db_pool.getUserByName(name_or_id)
+            if user:
+                user = user[0]
+                # user_stats = self.db_pool.getStats(user.id)    
+                solves = self.db_pool.getLastSolvesByUser(user.id, n_days)
+                await utils.last_solves_msg(ctx, user, solves, n_days)
+            else:
+                # await ctx.reply(f"User {name} not found in database")
+                await utils.user_not_found_in_db(ctx, name_or_id)
+            
+
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, name_or_id):
             await ctx.defer()

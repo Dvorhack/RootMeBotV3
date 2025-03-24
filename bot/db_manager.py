@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete, asc
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete, asc, desc
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from datetime import date, timedelta, datetime
 from numpy import cumsum
@@ -99,6 +99,13 @@ class DBManager():
             # x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(func.date(Solve.date) == date.today()).group_by(User.name).all()
             x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(Solve.date == date.today()).group_by(User.name).all()
         return x
+    
+    def getLastSolvesByUser(self, user_id, n_days):
+        start = date.today() - timedelta(days=n_days)
+        with Session(self.engine) as session:
+            user_last_solves = session.query(Solve.date, Challenge.title, Challenge.score).join(User, Solve.user_id == User.id).filter(Solve.challenge_id == Challenge.id).filter(User.id == user_id).filter(Solve.date >= start).order_by(desc(Solve.date)).all()
+            return user_last_solves
+
     
     def getLastSolves(self, n_days):
         users_cum_score = []  # list of tuples, of the form (username, [cumulated earned points])

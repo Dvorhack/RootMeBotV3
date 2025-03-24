@@ -163,6 +163,24 @@ async def overtook_msg(channel: TextChannel, user_name: str, overtakens: list) -
     embed = discord.Embed(color=Color.dark_gold(), title=title, description=description)
     await channel.send(embed=embed)
 
+
+async def last_solves_msg(ctx: commands.Context, user: User, solves: list, n_days: int) -> None:
+    message_title = f"Last solves of {user.name} the past {n_days} days"
+    embed = discord.Embed(color=Color.blue(), title=message_title, description=f"*ID : {user.id}\nScore : {user.score}*")
+    if requests.head(f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg").status_code == 200 :
+        pp = f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg"
+    elif requests.head(f"https://www.root-me.org/IMG/logo/auton{user.id}.png").status_code == 200 :
+        pp = f"https://www.root-me.org/IMG/logo/auton{user.id}.png"
+    else : 
+        pp = f"https://www.root-me.org/IMG/logo/auton0.png"
+    
+    embed.set_thumbnail(url=pp)
+    for solve in solves:
+        embed.add_field(name=f"{solve[1]} ({solve[2]} points)", value=f"Solved on {solve[0].strftime('%d %B %Y')}", inline=False)
+
+    await ctx.reply(embed=embed)
+
+
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
         0: "🥇",
