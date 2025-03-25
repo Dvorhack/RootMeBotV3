@@ -238,9 +238,8 @@ class CustomBot(commands.Bot):
         async def last_solves(ctx: commands.Context, name_or_id: str, n_days: int):
             await ctx.defer()
             name_or_id = discord.utils.escape_markdown(name_or_id)
-            if name_or_id.isdigit():
-                user = self.db_pool.getUserById(name_or_id)
-            else: 
+            user = self.db_pool.getUserById(name_or_id)
+            if not user: 
                 user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
@@ -250,47 +249,34 @@ class CustomBot(commands.Bot):
             else:
                 # await ctx.reply(f"User {name} not found in database")
                 await utils.user_not_found_in_db(ctx, name_or_id)
-            
+
 
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, name_or_id):
             await ctx.defer()
             name_or_id = discord.utils.escape_markdown(name_or_id)
-
-            if name_or_id.isdigit():
-                try:
-                    users = await self.api.fetchUser(name_or_id)
+            users = await self.api.fetchUserByName(name_or_id)
+            if len(users) == 1:
+                await self.api.loadUser(idx=int(users["0"]["id_auteur"]))
+                await utils.added_ok(ctx, users["0"]['nom'])
+            elif len(users) > 25:
+                await utils.too_many_users_msg(ctx, name_or_id)
+            elif len(users) > 1:
+                await self.possible_users(ctx, users.values())
+            else:  # no user found => try by id
+                users = await self.api.fetchUserById(name_or_id)
+                if users:
                     await self.api.loadUser(idx=name_or_id)
                     await utils.added_ok(ctx, users['nom'])
-                except :
-                    # await ctx.reply(f"User with ID {input} not found")
-                    await utils.user_not_found(ctx, name_or_id, by_id=True)
-
-            else:
-                try:
-                    users = await self.api.fetchUserByName(name_or_id)
-                except:
-                    await utils.user_not_found(ctx, name_or_id, by_id=False)
                 else:
-                    if len(users) > 25:
-                        # raise TooManyUsers(name_or_id, name=name_or_id)
-                        await utils.too_many_users_msg(ctx, name_or_id)
-                    elif len(users) > 1:
-                        await self.possible_users(ctx, users.values())
-                    elif len(users) == 1:
-                        await self.api.loadUser(idx=int(users['0']['id_auteur']))
-                        await utils.added_ok(ctx, users['0']['nom'])
-                    else:
-                        # await ctx.reply(f"User {input} not found")
-                        await utils.user_not_found(ctx, name_or_id, by_id=False)
+                    await utils.user_not_found(ctx, name_or_id, by_id=False)
 
         @self.hybrid_command(name="remove_user", description="remove a user from db")
         @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
         async def remove_user(ctx: commands.Context, name_or_id: str):
             name_or_id = discord.utils.escape_markdown(name_or_id)
-            if name_or_id.isdigit():
-                user = self.db_pool.getUserById(name_or_id)
-            else:
+            user = self.db_pool.getUserById(name_or_id)
+            if not user:
                 user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
@@ -305,9 +291,8 @@ class CustomBot(commands.Bot):
         async def profile(ctx: commands.Context, name_or_id: str):
             await ctx.defer()
             name_or_id = discord.utils.escape_markdown(name_or_id)
-            if name_or_id.isdigit():
-                user = self.db_pool.getUserById(name_or_id)
-            else: 
+            user = self.db_pool.getUserById(name_or_id)
+            if not user: 
                 user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
@@ -322,14 +307,12 @@ class CustomBot(commands.Bot):
         async def compare(ctx: commands.Context, input1, input2):
             input1 = discord.utils.escape_markdown(input1)
             input2 = discord.utils.escape_markdown(input2)
-            if input1.isdigit():
-                user1 = self.db_pool.getUserById(input1)
-            else : 
+            user1 = self.db_pool.getUserById(input1)
+            if not user1: 
                 user1 = self.db_pool.getUserByName(input1)
 
-            if input2.isdigit():
-                user2 = self.db_pool.getUserById(input2)
-            else : 
+            user2 = self.db_pool.getUserById(input2)
+            if not user2: 
                 user2 = self.db_pool.getUserByName(input2)
             
             if user1 and user2:

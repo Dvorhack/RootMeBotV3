@@ -19,14 +19,16 @@ class RootMeAPI(aiohttp.ClientSession):
             chall = chall[0]
         return chall
 
-    async def fetchUser(self, idx):
+    async def fetchUserById(self, idx):
         user = await self.fetch(f"{self.BASE_API}/auteurs/{idx}")
         if isinstance(user, list):
             user = user[0]
+        if "error" in user.keys():
+            return []
         return user
 
     async def fetchUserByName(self, name):
-        users =  await self.fetch(f"{self.BASE_API}/auteurs", params={'nom': name})
+        users = await self.fetch(f"{self.BASE_API}/auteurs", params={'nom': name})
         if isinstance(users, list):
             users = users[0]
         if 'error' in users.keys():
@@ -35,7 +37,7 @@ class RootMeAPI(aiohttp.ClientSession):
             return users
     
     async def updateUser(self, user):
-        user_data = await self.fetchUser(user.id)
+        user_data = await self.fetchUserById(user.id)
         api_solves = reversed(user_data["validations"])  # sort from oldest to newest
         for solve in self.db.new_solves(user.id, api_solves):
             if isinstance(solve, dict):
@@ -84,7 +86,7 @@ class RootMeAPI(aiohttp.ClientSession):
             raise Exception('loadUser with None name and idx')
 
         if idx is not None:
-            user = await self.fetchUser(idx)
+            user = await self.fetchUserById(idx)
         else:
             user = await self.fetchUserByName(name)
             if len(user)>1:
