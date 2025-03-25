@@ -118,8 +118,8 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
 
         await channel.send(file=file, embed=embed)
 
-async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool, list]) -> None:
-    user, chall, next_user, points_to_reach, firstblood, overtakens = solve
+async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool, list, int]) -> None:
+    user, chall, next_user, points_to_reach, firstblood, overtakens, step = solve
     # for solve in solve_list:
     if firstblood : emoji=":drop_of_blood:"
     else : emoji=":partying_face:"
@@ -151,6 +151,16 @@ async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, in
     await channel.send(file=file, embed=embed)
     if overtakens:
         await overtook_msg(channel, user.name, overtakens)
+    if step:
+        await new_step_msg(channel, user.name, step)
+
+
+async def new_step_msg(channel: TextChannel, user_name: str, step: int) -> None:
+    title = "New milestone reached! :fire:"
+    description = f"{user_name} passed the {step} point mark!"
+    embed = discord.Embed(color=Color.orange(), title=title, description=description)
+    await channel.send(embed=embed)
+
 
 async def overtook_msg(channel: TextChannel, user_name: str, overtakens: list) -> None:
     if len(overtakens) == 1:

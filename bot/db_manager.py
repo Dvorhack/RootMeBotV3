@@ -173,6 +173,8 @@ class DBManager():
 
             user.challenges.append(solve)
             next_users = [u for u in all_users if u.score > user.score]
+            # Check for new completed step
+            step = self.completed_step(user.score, chall_obj.score)
             user.score += chall_obj.score
             overtakens = []
             if not next_users:
@@ -190,11 +192,25 @@ class DBManager():
                     next_user = next_users[0]
                     points_to_next = next_user.score - user.score
                     next_user_name = next_user.name
-                data_new_solve = (user, chall_obj, next_user_name, points_to_next, first_blood, overtakens)
+                data_new_solve = (user, chall_obj, next_user_name, points_to_next, first_blood, overtakens, step)
 
             session.add(solve)
             session.commit()
             return data_new_solve
+        
+    def completed_step(self, user_score, chall_score):
+        """
+        Check for completed steps during chall validation
+        (every 100 pts when < 1000 pts, then every 1000)
+        """
+        step = None
+        if user_score < 1000:
+            if user_score // 100 != (user_score + chall_score) // 100:
+                step = ((user_score // 100) + 1) * 100
+        else:
+            if user_score // 1000 != (user_score + chall_score) // 1000:
+                step = ((user_score // 1000) + 1) * 1000
+        return step
     
     def who_solved(self, name):
         with Session(self.engine) as session:
