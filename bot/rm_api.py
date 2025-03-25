@@ -119,8 +119,6 @@ class RootMeAPI(aiohttp.ClientSession):
                     """
         except Exception as e:
             print(f"Exception {e} occured")
-            if text:
-                print(text)
 
 
 
