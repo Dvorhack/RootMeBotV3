@@ -33,6 +33,13 @@ from discord import Color
 Users = list[User]
 Challenges = list[Challenge]
 
+async def help_msg(ctx: commands.Context, all_commands: list[tuple[str, commands.HybridCommand]]) -> None:
+    title = f"List of available commands :thinking:"
+    embed = discord.Embed(color=Color.og_blurple(), title=title, description="")
+    for name, cmd in all_commands:
+        embed.add_field(name=f"**/{name}**", value=cmd.description, inline=False)
+    await ctx.reply(embed=embed)
+
 async def panic_message(channel: TextChannel, traceback: SyntaxWarning) -> None:
     """Runtime error"""
     title = f"C'est pas un bug c'est une feature"
@@ -111,9 +118,8 @@ async def new_chall(channel: TextChannel, chall_list) -> None:
 
         await channel.send(file=file, embed=embed)
 
-async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool]) -> None:
-        
-    user, chall, next_user, points_to_reach, firstblood = solve
+async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, int, bool, list, int]) -> None:
+    user, chall, next_user, points_to_reach, firstblood, overtakens, step = solve
     # for solve in solve_list:
     if firstblood : emoji=":drop_of_blood:"
     else : emoji=":partying_face:"
@@ -143,6 +149,47 @@ async def new_solves(channel: TextChannel, solve: tuple[User, Challenge, str, in
     else:
         embed.set_footer(text=f"{user.name} is still on top of the world!")
     await channel.send(file=file, embed=embed)
+    if overtakens:
+        await overtook_msg(channel, user.name, overtakens)
+    if step:
+        await new_step_msg(channel, user.name, step)
+
+
+async def new_step_msg(channel: TextChannel, user_name: str, step: int) -> None:
+    title = "New milestone reached! :fire:"
+    description = f"{user_name} passed the {step} point mark!"
+    embed = discord.Embed(color=Color.orange(), title=title, description=description)
+    await channel.send(embed=embed)
+
+
+async def overtook_msg(channel: TextChannel, user_name: str, overtakens: list) -> None:
+    if len(overtakens) == 1:
+        title = f"Scoreboard changes! :rocket:"
+        description = f"Congratz {user_name}! You've just overtaken {overtakens[0]} in the ranking! Keep going!"
+    else:
+        title = f"{len(overtakens)} in a row! Big changes in scoreboard! :rocket:"
+        users_overtaken = ", ".join(overtakens[:-1]) + " and " + overtakens[-1]
+        description = f"{user_name} is unstoppable! You've overtaken {users_overtaken}! You're superhuman!"
+    embed = discord.Embed(color=Color.dark_gold(), title=title, description=description)
+    await channel.send(embed=embed)
+
+
+async def last_solves_msg(ctx: commands.Context, user: User, solves: list, n_days: int) -> None:
+    message_title = f"Last solves of {user.name} the past {n_days} days"
+    embed = discord.Embed(color=Color.blue(), title=message_title, description=f"*ID : {user.id}\nScore : {user.score}*")
+    if requests.head(f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg").status_code == 200 :
+        pp = f"https://www.root-me.org/IMG/logo/auton{user.id}.jpg"
+    elif requests.head(f"https://www.root-me.org/IMG/logo/auton{user.id}.png").status_code == 200 :
+        pp = f"https://www.root-me.org/IMG/logo/auton{user.id}.png"
+    else : 
+        pp = f"https://www.root-me.org/IMG/logo/auton0.png"
+    
+    embed.set_thumbnail(url=pp)
+    for solve in solves:
+        embed.add_field(name=f"{solve[1]} ({solve[2]} points)", value=f"Solved on {solve[0].strftime('%d %B %Y')}", inline=False)
+
+    await ctx.reply(embed=embed)
+
 
 async def scoreboard_msg(ctx: commands.Context, users: Users) -> None:
     medals = {
@@ -273,7 +320,7 @@ async def who_solved_msg(ctx: commands.Context, chall_name, solvers) -> None:
     if len(solvers) == 1 : embed.description = f'That\'s what we call a giga boss :heart_eyes:'
 
     for users, date in solvers:
-        embed.add_field(name=f"{users.name}",value=f"Solved on {date.strftime('%d %B %Y')}",inline=False)
+        embed.add_field(name=f"{users.name}", value=f"Solved on {date.strftime('%d %B %Y')}", inline=False)
 
     await ctx.reply(embed=embed)
 

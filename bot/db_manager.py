@@ -2,7 +2,7 @@ from typing import List
 from typing import Optional
 
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete, asc
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, create_engine, select, Date, func, delete, asc, desc
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from datetime import date, timedelta, datetime
 from numpy import cumsum
@@ -100,6 +100,13 @@ class DBManager():
             x = session.query(User.name, func.sum(Challenge.score)).join(Solve, Solve.user_id == User.id).join(Challenge, Solve.challenge_id == Challenge.id).filter(Solve.date == date.today()).group_by(User.name).all()
         return x
     
+    def getLastSolvesByUser(self, user_id, n_days):
+        start = date.today() - timedelta(days=n_days)
+        with Session(self.engine) as session:
+            user_last_solves = session.query(Solve.date, Challenge.title, Challenge.score).join(User, Solve.user_id == User.id).filter(Solve.challenge_id == Challenge.id).filter(User.id == user_id).filter(Solve.date >= start).order_by(desc(Solve.date)).all()
+            return user_last_solves
+
+    
     def getLastSolves(self, n_days):
         users_cum_score = []  # list of tuples, of the form (username, [cumulated earned points])
         start = date.today() - timedelta(days=n_days)
@@ -143,6 +150,8 @@ class DBManager():
                 yield data_new_solve
 
     def add_solve_to_user(self, user_id, api_solve):
+        # TODO: manage transition to the next hundred or thousand
+        # TODO: cleared category
         with Session(self.engine) as session:
             session.expire_on_commit = False
             user = session.scalar(select(User).where(User.id == user_id))
@@ -163,23 +172,49 @@ class DBManager():
             solve.challenge = chall_obj
 
             user.challenges.append(solve)
+            next_users = [u for u in all_users if u.score > user.score]
+            # Check for new completed step
+            step = self.completed_step(user.score, chall_obj.score)
             user.score += chall_obj.score
-            next_user = [u for u in all_users if u.score > user.score]
-            if not next_user:
+            overtakens = []
+            if not next_users:
                 #  He is the first in the scoreboard
-                data_new_solve = (user, chall_obj, None, None, first_blood)
+                data_new_solve = (user, chall_obj, None, None, first_blood, overtakens)
             else:
-                next_user = next_user[0]
-                points_to_next = next_user.score - user.score
-                data_new_solve = (user, chall_obj, next_user.name, points_to_next, first_blood)
+                while user.score > next_users[0].score:
+                    overtakens.append(next_users[0].name)
+                    next_users.pop(0)
+                    if len(next_users) == 0:
+                        next_user_name = None
+                        points_to_next = None
+                        break
+                if next_users:
+                    next_user = next_users[0]
+                    points_to_next = next_user.score - user.score
+                    next_user_name = next_user.name
+                data_new_solve = (user, chall_obj, next_user_name, points_to_next, first_blood, overtakens, step)
 
             session.add(solve)
             session.commit()
             return data_new_solve
+        
+    def completed_step(self, user_score, chall_score):
+        """
+        Check for completed steps during chall validation
+        (every 100 pts when < 1000 pts, then every 1000)
+        """
+        step = None
+        if user_score < 1000:
+            if user_score // 100 != (user_score + chall_score) // 100:
+                step = ((user_score // 100) + 1) * 100
+        else:
+            if user_score // 1000 != (user_score + chall_score) // 1000:
+                step = ((user_score // 1000) + 1) * 1000
+        return step
     
     def who_solved(self, name):
         with Session(self.engine) as session:
-            x = session.scalars(select(Challenge).where(Challenge.title.ilike(f"%{name}%"))).all()
+            x = session.scalars(select(Challenge).where(Challenge.title.ilike(name))).all()
             if len(x) == 0:
                 raise ChallengeNotFound(name, name=name)
             elif len(x) > 1:

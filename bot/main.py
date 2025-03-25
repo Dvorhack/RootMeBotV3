@@ -65,7 +65,8 @@ async def main():
             initial_extensions=exts,
             intents=intents,
             testing_guild_id = GUILD_ID,
-            bot_channel_id = BOT_CHANNEL
+            bot_channel_id = BOT_CHANNEL,
+            help_command=None
         ) as bot:
             bot.add_commands()
 

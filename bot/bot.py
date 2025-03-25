@@ -100,7 +100,8 @@ class CustomBot(commands.Bot):
                     full_chall_list = [self.db_pool.getChallengeById(x) for x in new_challs]
                     await utils.new_chall(channel, full_chall_list)
             except Exception:
-                utils.panic_message(channel, traceback.format_exc())
+                # utils.panic_message(channel, traceback.format_exc())
+                pass
 
             print(f"{datetime.datetime.now()} | OK challs")
 
@@ -120,7 +121,8 @@ class CustomBot(commands.Bot):
                     async for solve in self.api.updateUser(user):
                         await utils.new_solves(channel, solve)
             except Exception:
-                await utils.panic_message(channel, traceback.format_exc())
+                # await utils.panic_message(channel, traceback.format_exc())
+                pass
 
             print(f"{datetime.datetime.now()} | OK solves")
 
@@ -166,9 +168,15 @@ class CustomBot(commands.Bot):
                 raise InitNotDone()
             return self.init_done
 
+        @self.hybrid_command(name="help", description="available commands")
+        async def help(ctx: commands.Context):
+            print(self.all_commands)
+            await utils.help_msg(ctx, self.all_commands.items())
+
         @self.hybrid_command(name="who_solved", description="who solved a specifique challenge")
         @app_commands.autocomplete(name=self.choose_challenge_autocomplete)
         async def who_solved(ctx: commands.Context, name: str):
+            name = discord.utils.escape_markdown(name)
             try:
                 chall_name, solvers = self.db_pool.who_solved(name)
             except ChallengeNotFound:
@@ -184,25 +192,25 @@ class CustomBot(commands.Bot):
             await self.sync_guid()
             await ctx.send("Synced !")
         
-        @self.hybrid_command(name="update_challs", description="on garde ou pas ?")
-        async def update_challs(ctx: commands.context):
-            await ctx.defer()
-            channel = self.get_channel(self.bot_channel_id)
-            # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
-            new_challs = await self.api.loadAllChallenges()
-            if len(new_challs):
-                print(new_challs)
-                await utils.new_chall(channel, new_challs)
-            await ctx.reply("Challenges updated successfully")
+        # @self.hybrid_command(name="update_challs", description="on garde ou pas ?")
+        # async def update_challs(ctx: commands.context):
+        #     await ctx.defer()
+        #     channel = self.get_channel(self.bot_channel_id)
+        #     # new_challs: liste des nouveaux challenges, au format JSON (fetch depuis l'api)
+        #     new_challs = await self.api.loadAllChallenges()
+        #     if len(new_challs):
+        #         print(new_challs)
+        #         await utils.new_chall(channel, new_challs)
+        #     await ctx.reply("Challenges updated successfully")
         
-        @self.hybrid_command(name="update_solves", description="on garde ou pas ?")
-        async def update_solves(ctx: commands.context):
-            await ctx.defer()
-            channel = self.get_channel(self.bot_channel_id)
-            for user in self.db_pool.getAllUsers():
-                solves_data = await self.api.updateUser(user)
-                if solves_data:
-                    await utils.new_solves(ctx, solves_data)
+        # @self.hybrid_command(name="update_solves", description="on garde ou pas ?")
+        # async def update_solves(ctx: commands.context):
+        #     await ctx.defer()
+        #     channel = self.get_channel(self.bot_channel_id)
+        #     for user in self.db_pool.getAllUsers():
+        #         solves_data = await self.api.updateUser(user)
+        #         if solves_data:
+        #             await utils.new_solves(ctx, solves_data)
         
         @self.hybrid_command(name="scoreboard", description="scoreboard of registered users")
         async def scoreboard(ctx: commands.Context):
@@ -225,39 +233,50 @@ class CustomBot(commands.Bot):
                 last_solves = self.db_pool.getLastSolves(n_days)
                 await utils.graph_msg(ctx, last_solves, n_days)
 
+        @self.hybrid_command(name="last_solves", description="last solves for a hacker")
+        @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
+        async def last_solves(ctx: commands.Context, name_or_id: str, n_days: int):
+            await ctx.defer()
+            name_or_id = discord.utils.escape_markdown(name_or_id)
+            user = self.db_pool.getUserById(name_or_id)
+            if not user: 
+                user = self.db_pool.getUserByName(name_or_id)
+            if user:
+                user = user[0]
+                # user_stats = self.db_pool.getStats(user.id)    
+                solves = self.db_pool.getLastSolvesByUser(user.id, n_days)
+                await utils.last_solves_msg(ctx, user, solves, n_days)
+            else:
+                # await ctx.reply(f"User {name} not found in database")
+                await utils.user_not_found_in_db(ctx, name_or_id)
+
+
         @self.hybrid_command(name="add_user", description="register a user either by it's name or uid")
         async def add_user(ctx: commands.Context, name_or_id):
             await ctx.defer()
-
-            if name_or_id.isdigit():
-                users = await self.api.fetchUser(name_or_id)
-                try:
+            name_or_id = discord.utils.escape_markdown(name_or_id)
+            users = await self.api.fetchUserByName(name_or_id)
+            if len(users) == 1:
+                await self.api.loadUser(idx=int(users["0"]["id_auteur"]))
+                await utils.added_ok(ctx, users["0"]['nom'])
+            elif len(users) > 25:
+                await utils.too_many_users_msg(ctx, name_or_id)
+            elif len(users) > 1:
+                await self.possible_users(ctx, users.values())
+            else:  # no user found => try by id
+                users = await self.api.fetchUserById(name_or_id)
+                if users:
                     await self.api.loadUser(idx=name_or_id)
                     await utils.added_ok(ctx, users['nom'])
-                except :
-                    # await ctx.reply(f"User with ID {input} not found")
-                    await utils.user_not_found(ctx, name_or_id, by_id=True)
-
-            else :
-                users = await self.api.fetchUserByName(name_or_id)
-
-                if len(users) > 25:
-                    raise TooManyUsers(name_or_id, name=name_or_id)
-                elif len(users) > 1:
-                    await self.possible_users(ctx, users.values())
-                elif len(users) == 1:
-                    await self.api.loadUser(idx=int(users['0']['id_auteur']))
-                    await utils.added_ok(ctx, users['0']['nom'])
                 else:
-                    # await ctx.reply(f"User {input} not found")
                     await utils.user_not_found(ctx, name_or_id, by_id=False)
 
         @self.hybrid_command(name="remove_user", description="remove a user from db")
         @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
-        async def remove_user(ctx: commands.Context, name_or_id:str):
-            if name_or_id.isdigit():
-                user = self.db_pool.getUserById(name_or_id)
-            else:
+        async def remove_user(ctx: commands.Context, name_or_id: str):
+            name_or_id = discord.utils.escape_markdown(name_or_id)
+            user = self.db_pool.getUserById(name_or_id)
+            if not user:
                 user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
@@ -271,9 +290,9 @@ class CustomBot(commands.Bot):
         @app_commands.autocomplete(name_or_id=self.choose_user_autocomplete)
         async def profile(ctx: commands.Context, name_or_id: str):
             await ctx.defer()
-            if name_or_id.isdigit():
-                user = self.db_pool.getUserById(name_or_id)
-            else: 
+            name_or_id = discord.utils.escape_markdown(name_or_id)
+            user = self.db_pool.getUserById(name_or_id)
+            if not user: 
                 user = self.db_pool.getUserByName(name_or_id)
             if user:
                 user = user[0]
@@ -286,14 +305,14 @@ class CustomBot(commands.Bot):
         @self.hybrid_command(name="compare", description="compare progression of two users")
         @app_commands.autocomplete(input1=self.choose_user_autocomplete, input2=self.choose_user_autocomplete)
         async def compare(ctx: commands.Context, input1, input2):
-            if input1.isdigit():
-                user1 = self.db_pool.getUserById(input1)
-            else : 
+            input1 = discord.utils.escape_markdown(input1)
+            input2 = discord.utils.escape_markdown(input2)
+            user1 = self.db_pool.getUserById(input1)
+            if not user1: 
                 user1 = self.db_pool.getUserByName(input1)
 
-            if input2.isdigit():
-                user2 = self.db_pool.getUserById(input2)
-            else : 
+            user2 = self.db_pool.getUserById(input2)
+            if not user2: 
                 user2 = self.db_pool.getUserByName(input2)
             
             if user1 and user2:
