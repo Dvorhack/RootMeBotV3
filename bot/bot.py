@@ -121,8 +121,8 @@ class CustomBot(commands.Bot):
                     async for solve in self.api.updateUser(user):
                         await utils.new_solves(channel, solve)
             except Exception:
-                await utils.panic_message(channel, traceback.format_exc())
-                # pass
+                # await utils.panic_message(channel, traceback.format_exc())
+                pass
 
             print(f"{datetime.datetime.now()} | OK solves")
 
