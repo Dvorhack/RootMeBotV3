@@ -179,7 +179,7 @@ class DBManager():
             overtakens = []
             if not next_users:
                 #  He is the first in the scoreboard
-                data_new_solve = (user, chall_obj, None, None, first_blood, overtakens)
+                data_new_solve = (user, chall_obj, None, None, first_blood, overtakens, step)
             else:
                 while user.score > next_users[0].score:
                     overtakens.append(next_users[0].name)
